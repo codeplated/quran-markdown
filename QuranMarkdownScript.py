@@ -1,4 +1,5 @@
 import json, os
+import QuranConnections as connections
 
 with open('data/quran.json') as f:
     quran = json.load(f)
@@ -46,8 +47,6 @@ AUDIO_BASE_PATH = "./data/audio"
 # AUDIO_VAULT_PATH = "audio"        # subfolder name inside vault (Option A)
 
 USE_EXTERNAL_LINK = True         # set True to use Option B (external path)
-
-# Audio file extension — change to .ogg / .webm if your files differ
 AUDIO_EXT = ".mp3"
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -87,11 +86,33 @@ def audio_embed(surah_num: int, ayah_num: int) -> str:
         # Obsidian wikilink embed — file must be inside the vault
         vault_rel = f"{AUDIO_VAULT_PATH}/{fname}"
         return f"![[{vault_rel}]]"
+
 def getAyahTafseerUr(surahNum:str, ayahNum:str )-> str:
-    print(ayahNum )
     with open(f'data/ur-tazkirul-quran/{surahNum}/{ayahNum}.json') as f:
         urTafseer = json.load(f)
     return urTafseer["text"]
+
+def createNote(vaultPath:str, filename:str, content:str):
+    if not os.path.exists(vaultPath):
+            os.makedirs(vaultPath)
+
+    with open(os.path.join(vaultPath, filename), 'w', encoding='utf-8') as f:
+            f.write(content)
+
+def createIndex():
+    content = f"""
+
+The General Topics in Quran.
+
+| Topic | Description |
+| --- | --- |
+"""
+    for key, (emoji, english, arabic, description) in connections.THEMES.items():
+        print (f"{emoji}")
+        content += f"| {emoji} [{english}   {arabic}] | {description} |\n"
+    content += f"the end\n"
+    createNote(f"{basePath}/0 - index", "index.md", content)
+createIndex()
 
 # ─── Main generation loop ──────────────────────────────────────────────────────
 
@@ -110,7 +131,6 @@ for sorahNum, surah in quran.items():
         urTafseer  = getAyahTafseerUr(sorahNum, ayahNum)
         vaultPath  = f"{basePath}/{sorahNum} - {enChapterName} {chapterName}"
         filename   = f"{sorahNum}_{ayahNum}: {enChapterName} {chapterName}.md"
-        print(filename)
         if int(sorahNum) > 1 and ayahNum == 1 and int(sorahNum) != 9:
             ayahText = bismillah+"\n\n"+ayahText
         prev = (
@@ -176,8 +196,4 @@ tags: []
 ## Personal Reflection
 """
 
-        if not os.path.exists(vaultPath):
-            os.makedirs(vaultPath)
-
-        with open(os.path.join(vaultPath, filename), 'w', encoding='utf-8') as f:
-            f.write(content)
+        createNote(vaultPath, filename, content)
