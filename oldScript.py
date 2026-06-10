@@ -100,19 +100,27 @@ def createNote(vaultPath:str, filename:str, content:str):
             f.write(content)
 
 def createIndex():
-    content = f"""
+    counter = 0
+    category = ""
+    content = "# The General Topics of Quran."
 
-The General Topics in Quran.
+    for key, (emoji, theme , english, urdu, description) in connections.THEMES.items():
+        if(theme != category):
+            category = theme
+            content += f"""
 
-| Topic | Description |
-| --- | --- |
+### The {theme}.
+
+| # | Topic | Description |
+| --- | --- | --- |
 """
-    for key, (emoji, english, arabic, description) in connections.THEMES.items():
-        print (f"{emoji}")
-        content += f"| {emoji} [{english}   {arabic}] | {description} |\n"
+        counter += 1
+        content += f"| {counter} | {emoji} [{english}   {urdu}] | {description} |\n"
     content += f"the end\n"
     createNote(f"{basePath}/0 - index", "index.md", content)
 createIndex()
+indi = connections.build_index()
+# print(indi)
 
 # ─── Main generation loop ──────────────────────────────────────────────────────
 
@@ -146,13 +154,15 @@ for sorahNum, surah in quran.items():
 
         ayahNumMinus = int(ayahNum) - 1
         audio        = audio_embed(int(sorahNum), ayahNum)
+        tags = connections.get_ayah_themes(int(sorahNum), ayahNum)
+        print(tags)
 
         content = f"""---
 surah: {sorahNum} / 114
 surah_name: {enChapterName} / {chapterName} / {urChapterName}
 ayah: {ayahNum} / {totalAyah}
 type: {chapterType}
-tags: []
+tags: {tags}
 ---
 
 ## 🔊 Recitation

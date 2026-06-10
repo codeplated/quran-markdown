@@ -4,6 +4,18 @@ The purpose of this script is to be able to study the Quran in a structured way,
 
 This script generates Markdown files for each Quran verse (ayah) with comprehensive multilingual content and connections for use in Obsidian vaults.
 
+Generates one Obsidian note per ayah with:
+  - Arabic text (with Bismillah prepended where appropriate)
+  - Urdu & English translations
+  - Audio embed (external file:// or internal vault link)
+  - Urdu Tafsir (Bayan ul Quran / Tazkirul Quran)
+  - Thematic tags from QuranConnections
+  - Structural navigation (prev / next)
+  - Sentinel-protected personal sections (never overwritten on redeploy)
+
+**Rerun freely — your Tafsir Notes, Personal Reflections, and Thematic Links are always preserved between runs.**
+
+
 ![Obsidian Vault](data/obsidian.png)
 ## Features
 - Generates individual Markdown files for each ayah with:
