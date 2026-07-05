@@ -2,7 +2,7 @@ import json
 import os
 import re
 
-import QuranConnections as connections
+import quranConnections as connections
 
 VAULT_PATH       = "../Mushaf"          # root of your Obsidian vault
 AUDIO_BASE_PATH  = "./data/audio"       # where audio files live on disk
@@ -42,10 +42,79 @@ english    = load_json("data/en.json")
 urdu       = load_json("data/ur.json")
 urChapters = load_json("data/chapters/ur.json")
 enChapters = load_json("data/chapters/en.json")
+asmaUlHusna = load_json("data/asma_ul_husna.json")
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  AUDIO HELPERS
 # ══════════════════════════════════════════════════════════════════════════════
+
+def asma_ul_husna_reader() -> None:
+    for name in asmaUlHusna:
+        number = name["number"]
+        arabic = name["arabic"]
+        transliteration = name["transliteration"]
+        english = name["english"]
+        urdu = name["urdu"]
+        root = name["root"]
+        root_meaning = name["root_meaning"]
+        category = name["category"]
+        explanation = name["explanation"]
+        urdu_explanation = name["urdu_explanation"]
+        daily_life = name["daily_life"]
+        quran_occurrences = name["quran_occurrences"]
+        key_ayaat = name["key_ayaat"]
+
+        content = build_asma_ul_husna_note(
+            number,
+            arabic,
+            transliteration,
+            english,
+            urdu,
+            root,
+            root_meaning,
+            category,
+            explanation,
+            urdu_explanation,
+            daily_life,
+            quran_occurrences,
+            key_ayaat
+        )
+        folder = f"{VAULT_PATH}/Asma Ul Husna"
+        filename     = f"{number} - {arabic}.md"
+        write_note(folder, filename, content)
+
+def build_asma_ul_husna_note(
+    number:     int,
+    arabic:      str,
+    transliteration:   int,
+    english:       str,
+    urdu:       str,
+    root:       str,
+    root_meaning:  str,
+    category:          list,
+    explanation:     str,
+    urdu_explanation:     str,
+    daily_life:  str,
+    quran_occurrences:str,
+    key_ayaat:   list,
+    ) -> str:
+    return f"""---
+number: {number}
+arabic: {arabic}
+transliteration: {transliteration}
+english: {english}
+urdu: {urdu}
+root: {root}
+root_meaning: {root_meaning}
+category: {category}
+explanation: {explanation}
+urdu_explanation: {urdu_explanation}
+daily_life: {daily_life}
+quran_occurrences: {quran_occurrences}
+key_ayaat: {key_ayaat}
+---
+{SENTINEL_END}"""
+    
 
 def audio_path(surah_num: int, ayah_num: int) -> str:
     """Returns the relative audio path: 017/001.mp3"""
@@ -199,7 +268,7 @@ tags: {tag_str}
 
 - **Previous:** {prev_link}
 - **Next:** {next_link}
-- **Thematic:** *(add [[wikilinks]] here)*
+- **Thematic:** *(add links here)*
 
 {SENTINEL_END}"""
 
@@ -248,6 +317,7 @@ def main():
     print("=" * 60)
 
     create_index()
+    asma_ul_husna_reader()
 
     created = 0
     updated = 0
@@ -300,7 +370,7 @@ def main():
                 print(f"  [NEW]     {filename}")
             else:
                 updated += 1
-                print(f"  [UPDATED] {filename}")
+                #print(f"  [UPDATED] {filename}")
 
     print()
     print("=" * 60)
