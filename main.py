@@ -43,6 +43,8 @@ urdu       = load_json("data/ur.json")
 urChapters = load_json("data/chapters/ur.json")
 enChapters = load_json("data/chapters/en.json")
 asmaUlHusna = load_json("data/asma_ul_husna.json")
+eng_surah_names = []
+arb_surah_names = []
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  AUDIO HELPERS
@@ -98,22 +100,38 @@ def build_asma_ul_husna_note(
     quran_occurrences:str,
     key_ayaat:   list,
     ) -> str:
+    ayat_links = []
+    for k in key_ayaat:
+        ayat_link = f"[[{k[0]}_{k[1]}: {eng_surah_names[k[0]-1]} {arb_surah_names[k[0]-1]}]]"
+        ayat_links.append(ayat_link)
     return f"""---
 number: {number}
-arabic: {arabic}
-transliteration: {transliteration}
-english: {english}
-urdu: {urdu}
-root: {root}
+name: {english} / {arabic} / {urdu} / {transliteration} / {root}
 root_meaning: {root_meaning}
 category: {category}
-explanation: {explanation}
-urdu_explanation: {urdu_explanation}
-daily_life: {daily_life}
 quran_occurrences: {quran_occurrences}
 key_ayaat: {key_ayaat}
 ---
-{SENTINEL_END}"""
+## English Explanation 
+
+{explanation}
+
+## Urdu Explaination
+ 
+{urdu_explanation}
+
+## Daily Life
+
+{daily_life}
+
+## Key Ayaat
+
+{"\n".join(ayat_links)}
+
+{SENTINEL_END}
+
+## Personal Notes
+"""
     
 
 def audio_path(surah_num: int, ayah_num: int) -> str:
@@ -233,7 +251,7 @@ ayah: {ayah_num} / {total_ayahs}
 type: {chapter_type}
 tags: {tag_str}
 ---
-
+{SENTINEL_START}
 ## 🔊 Recitation
 
 {audio}
@@ -317,8 +335,6 @@ def main():
     print("=" * 60)
 
     create_index()
-    asma_ul_husna_reader()
-
     created = 0
     updated = 0
 
@@ -331,13 +347,13 @@ def main():
         chapter_type = urChapters[idx]["type"]
         total_ayahs  = urChapters[idx]["total_verses"]
         folder       = f"{VAULT_PATH}/{surah_num_str} - {en_name} {ar_name}"
-
+        eng_surah_names.append(en_name)
+        arb_surah_names.append(ar_name)
         for ayah in surah_ayahs:
             ayah_num     = ayah["verse"]
             ayah_idx     = ayah_num - 1
             filename     = f"{surah_num_str}_{ayah_num}: {en_name} {ar_name}.md"
             filepath     = os.path.join(folder, filename)
-
             # ── Navigation links
             prev_link = (
                 f"[[{surah_num_str}_{ayah_num - 1}: {en_name} {ar_name}]]"
@@ -377,7 +393,7 @@ def main():
     print(f"  ✅  {created} created,  {updated} updated")
     print("       Personal notes and reflections preserved.")
     print("=" * 60)
-
+    asma_ul_husna_reader()
 
 if __name__ == "__main__":
     main()
