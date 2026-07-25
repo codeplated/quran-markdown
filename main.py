@@ -5,7 +5,8 @@ import re
 import quranConnections as connections
 
 VAULT_PATH       = "../Mushaf"          # root of your Obsidian vault
-AUDIO_BASE_PATH  = "./data/audio"       # where audio files live on disk
+#AUDIO_BASE_PATH  = "./data/audio"
+AUDIO_BASE_PATH  = "./data/AlafasyAudio"       # where audio files live on disk
 AUDIO_EXT        = ".mp3"
 
 # USE_EXTERNAL_LINK = True  → <audio> tag with absolute file:// path (Option B)
@@ -140,10 +141,16 @@ def audio_path(surah_num: int, ayah_num: int) -> str:
     file   = str(ayah_num).zfill(3)
     return f"{folder}/{file}{AUDIO_EXT}"
 
+def alafasy_audio_path(surah_num: int, ayah_num: int) -> str:
+    """Returns the relative audio path: 017001.mp3"""
+    folder = str(surah_num).zfill(3)
+    file   = str(ayah_num).zfill(3)
+    return f"{folder}{file}{AUDIO_EXT}"
+
 
 def audio_embed(surah_num: int, ayah_num: int) -> str:
     """Returns the Obsidian markdown snippet to play the audio."""
-    rel_path = audio_path(surah_num, ayah_num)
+    rel_path = alafasy_audio_path(surah_num, ayah_num)
 
     if USE_EXTERNAL_LINK:
         abs_path = os.path.abspath(
