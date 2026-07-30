@@ -4,6 +4,8 @@ import re
 
 import quranConnections as connections
 
+
+
 VAULT_PATH       = "../Mushaf"          # root of your Obsidian vault
 #AUDIO_BASE_PATH  = "./data/audio"
 AUDIO_BASE_PATH  = "./data/AlafasyAudio"       # where audio files live on disk
@@ -44,6 +46,7 @@ urdu       = load_json("data/ur.json")
 urChapters = load_json("data/chapters/ur.json")
 enChapters = load_json("data/chapters/en.json")
 asmaUlHusna = load_json("data/asma_ul_husna.json")
+personalities = load_json("data/quran_personalities.json")
 eng_surah_names = []
 arb_surah_names = []
 
@@ -262,6 +265,7 @@ tags: {tag_str}
 ## 🔊 Recitation
 
 {audio}
+**Next:** {next_link}
 
 ---
 
@@ -333,6 +337,321 @@ def create_index():
     print("  [INDEX]   0 - Index/index.md")
 
 # ══════════════════════════════════════════════════════════════════════════════
+#  PERSONALITIES — Quran figures, angels, jinn, companions, groups
+#  Drop these functions into main.py alongside the existing functions.
+#
+#  SETUP — two lines to add to main.py:
+#
+#  1. With the other load_json() calls at module level:
+#       personalities = load_json("data/quran_personalities.json")
+#
+#  2. At the end of main(), after asma_ul_husna_reader():
+#       personalities_reader(personalities)
+# ══════════════════════════════════════════════════════════════════════════════
+
+DEFAULT_PERSONALITY_PERSONAL = """
+## 📝 Study Notes
+
+
+## 💡 Personal Reflection
+
+
+## 🔗 Related Ayaat & Personalities
+
+"""
+
+PATH_META = {
+    "straight": ("✅", "Straight Path",  "صراط مستقیم"),
+    "deviated": ("❌", "Deviated Path",  "گمراہی"),
+    "mixed":    ("⚠️",  "Mixed — Erred, Repented, or Complex", "مخلوط"),
+    "unknown":  ("❓", "Unknown",        "نامعلوم"),
+}
+
+TYPE_META = {
+    "prophet":   ("🌙", "Prophet / Messenger", "نبی / رسول"),
+    "angel":     ("👼", "Angel",               "فرشتہ"),
+    "jinn":      ("🔥", "Jinn",                "جن"),
+    "companion": ("⭐", "Companion",           "صحابی"),
+    "person":    ("👤", "Person",              "شخصیت"),
+    "group":     ("👥", "Group / Nation",      "قوم / گروہ"),
+}
+
+
+def _truncate(text: str, limit: int = 60) -> str:
+    """Truncates long text for table cells without breaking markdown."""
+    return text if len(text) <= limit else text[:limit - 1] + "…"
+
+
+def _table_link(p: dict) -> str:
+    """
+    Wikilink alias safe for use inside a markdown table cell.
+    The pipe | in [[file|alias]] must be escaped as \\| inside table cells,
+    otherwise markdown parsers treat it as a column separator.
+    """
+    return f"[[{p['name_english']} — {p['name_arabic']}\\|{p['name_english']}]]"
+
+
+def _ayah_wikilink(surah: int, ayah: int) -> str:
+    """
+    Builds an Obsidian wikilink for an ayah using the same filename format
+    as the ayah notes:  [[2_255: Al-Baqarah البقرة]]
+    Relies on eng_surah_names / arb_surah_names populated by main().
+    """
+    try:
+        en = eng_surah_names[surah - 1]
+        ar = arb_surah_names[surah - 1]
+        return f"[[{surah}_{ayah}: {en} {ar}]]"
+    except IndexError:
+        return f"[[{surah}_{ayah}]]"
+
+
+def _personality_wikilink(pid: str, all_personalities: list) -> str:
+    """Wikilink to another personality note by its id."""
+    match = next((p for p in all_personalities if p["id"] == pid), None)
+    if match:
+        return f"[[{match['name_english']} — {match['name_arabic']}]]"
+    return f"[[{pid}]]"
+
+
+# ── Note builder ───────────────────────────────────────────────────────────────
+
+def _build_personality_generated_block(p: dict, all_personalities: list) -> str:
+    """Script-owned content wrapped in sentinels."""
+
+    path_emoji, path_en, path_ur = PATH_META.get(p["path"], ("❓", p["path"], ""))
+    type_emoji, type_en, type_ur = TYPE_META.get(p["type"], ("👤", p["type"], ""))
+
+    aliases = ", ".join(p.get("also_known_as", [])) or "—"
+    tags_str = json.dumps(p.get("tags", []))
+
+    # Ayah wikilinks — one per line as a list
+    ayah_links = "\n".join(
+        f"- {_ayah_wikilink(s, a)}"
+        for s, a in p.get("mentioned_in", [])
+    ) or "_No specific ayaat recorded._"
+
+    # Connection wikilinks
+    connection_links = "\n".join(
+        f"- {_personality_wikilink(cid, all_personalities)}"
+        for cid in p.get("connections", [])
+    ) or "_No connections recorded._"
+
+    # Lessons as numbered list
+    lessons = "\n".join(
+        f"{i + 1}. {lesson}"
+        for i, lesson in enumerate(p.get("lessons", []))
+    ) or "_No lessons recorded._"
+
+    return f"""{SENTINEL_START}
+---
+id: {p['id']}
+name: "{p['name_english']} / {p['name_arabic']} / {p['name_urdu']}"
+type: {type_en}
+path: {path_en}
+era: "{p.get('era', '—')}"
+tags: {tags_str}
+---
+
+# {type_emoji} {p['name_english']} — {p['name_arabic']}
+### {p['name_urdu']}
+
+> **Also known as:** {aliases}
+
+---
+
+## {path_emoji} Path — {path_en} | {path_ur}
+
+**Reason:** {p.get('path_reason', '—')}
+
+---
+
+## 📖 Story — English
+
+{p.get('story_summary', '—')}
+
+---
+
+## 📖 کہانی — اردو
+
+{p.get('urdu_summary', '—')}
+
+---
+
+## 💡 Lessons from the Quran
+
+{lessons}
+
+---
+
+## 📍 Mentioned in Quran
+
+{ayah_links}
+
+---
+
+## 🔗 Connected Personalities
+
+{connection_links}
+
+{SENTINEL_END}"""
+
+
+def _get_personality_filepath(p: dict) -> tuple:
+    """Returns (folder, filename, filepath) for a personality note."""
+    folder   = f"{VAULT_PATH}/Personalities"
+    filename = f"{p['name_english']} — {p['name_arabic']}.md"
+    filepath = os.path.join(folder, filename)
+    return folder, filename, filepath
+
+
+# ── Main reader ────────────────────────────────────────────────────────────────
+
+def personalities_reader(all_personalities: list) -> None:
+    """
+    Reads the personalities list and writes one Obsidian note per entry,
+    then writes four index notes under Personalities/_Index/.
+    """
+    print()
+    print("=" * 60)
+    print("  Personalities → Obsidian")
+    print("=" * 60)
+
+    created = 0
+    updated = 0
+
+    for p in all_personalities:
+        folder, filename, filepath = _get_personality_filepath(p)
+
+        generated = _build_personality_generated_block(p, all_personalities)
+        personal  = read_personal_section(filepath)
+        is_new    = write_note(folder, filename, generated + personal)
+
+        if is_new:
+            created += 1
+            print(f"  [NEW]     {filename}")
+        else:
+            updated += 1
+
+    _write_personalities_indexes(all_personalities)
+
+    print()
+    print(f"  ✅  {created} created,  {updated} updated")
+    print("=" * 60)
+
+
+# ── Index builders ─────────────────────────────────────────────────────────────
+
+def _write_personalities_indexes(all_personalities: list) -> None:
+    """Writes four clean index notes."""
+
+    folder = f"{VAULT_PATH}/Personalities/_Index"
+
+    _write_all_index(all_personalities, folder)
+    _write_path_index(all_personalities, folder, "straight")
+    _write_path_index(all_personalities, folder, "deviated")
+    _write_path_index(all_personalities, folder, "mixed")
+
+
+def _write_all_index(all_personalities: list, folder: str) -> None:
+    """Master index grouped by type."""
+
+    lines = [
+        "# 👥 Quranic Personalities — Master Index\n\n",
+        f"**Total: {len(all_personalities)}**\n\n",
+    ]
+
+    for ptype, (type_emoji, type_en, type_ur) in TYPE_META.items():
+        group = [p for p in all_personalities if p["type"] == ptype]
+        if not group:
+            continue
+
+        lines.append(f"\n## {type_emoji} {type_en} — {type_ur}\n\n")
+        lines.append("| # | Name | Path | Era |\n")
+        lines.append("|---|------|------|-----|\n")
+
+        for i, p in enumerate(group, 1):
+            path_emoji = PATH_META.get(p["path"], ("❓",))[0]
+            path_label = PATH_META.get(p["path"], ("", ""))[1]
+            era        = _truncate(p.get("era", "—"), 35)
+            link       = _table_link(p)
+            lines.append(f"| {i} | {link} | {path_emoji} {path_label} | {era} |\n")
+
+    content = "".join(lines)
+    write_note(folder, "All Personalities.md", content)
+    print(f"  [INDEX]   Personalities/_Index/All Personalities.md")
+
+
+def _write_path_index(all_personalities: list, folder: str, path: str) -> None:
+    """
+    Writes a single-path index (straight / deviated / mixed).
+    path_reason is shown as a separate paragraph under each row,
+    not crammed into a table cell, to avoid misalignment.
+    """
+
+    path_emoji, path_en, path_ur = PATH_META.get(path, ("❓", path, ""))
+    group = [p for p in all_personalities if p["path"] == path]
+
+    if not group:
+        return
+
+    # ── Header
+    lines = [
+        f"# {path_emoji} {path_en} — {path_ur}\n\n",
+        f"**Total: {len(group)}**\n\n",
+    ]
+
+    if path == "deviated":
+        lines.append(
+            "> Understanding why they deviated is as important as understanding "
+            "why the righteous succeeded. The Quran presents them as warnings, "
+            "not as targets for hatred.\n\n"
+        )
+    elif path == "mixed":
+        lines.append(
+            "> These figures neither fit cleanly into straight nor deviated. "
+            "Their stories show the complexity of moral life and the power of repentance.\n\n"
+        )
+
+    # ── Summary table — no path_reason column (too long, breaks alignment)
+    lines.append("| # | Name | Type | Era |\n")
+    lines.append("|---|------|------|-----|\n")
+
+    for i, p in enumerate(group, 1):
+        type_emoji = TYPE_META.get(p["type"], ("👤",))[0]
+        type_label = TYPE_META.get(p["type"], ("", ""))[1]
+        era        = _truncate(p.get("era", "—"), 35)
+        link       = _table_link(p)
+        lines.append(f"| {i} | {link} | {type_emoji} {type_label} | {era} |\n")
+
+    # ── Detailed cards below the table — each person gets a mini section
+    lines.append("\n---\n\n## Details\n\n")
+
+    for p in group:
+        type_emoji = TYPE_META.get(p["type"], ("👤",))[0]
+        link       = f"[[{p['name_english']} — {p['name_arabic']}]]"
+        lines.append(f"### {type_emoji} {link} — {p['name_urdu']}\n\n")
+        lines.append(f"**Era:** {p.get('era', '—')}\n\n")
+        lines.append(f"**Reason:** {p.get('path_reason', '—')}\n\n")
+
+        tags = p.get("tags", [])
+        if tags:
+            tag_str = " ".join(f"`{t}`" for t in tags)
+            lines.append(f"**Tags:** {tag_str}\n\n")
+
+        lines.append("---\n\n")
+
+    # ── File name map
+    filename_map = {
+        "straight": "Straight Path.md",
+        "deviated": "Deviated Path.md",
+        "mixed":    "Mixed Path.md",
+    }
+
+    filename = filename_map[path]
+    content  = "".join(lines)
+    write_note(folder, filename, content)
+    print(f"  [INDEX]   Personalities/_Index/{filename}")
+# ══════════════════════════════════════════════════════════════════════════════
 #  MAIN
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -401,6 +720,7 @@ def main():
     print("       Personal notes and reflections preserved.")
     print("=" * 60)
     asma_ul_husna_reader()
+    personalities_reader(personalities)
 
 if __name__ == "__main__":
     main()
