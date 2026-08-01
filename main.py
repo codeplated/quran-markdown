@@ -1,11 +1,9 @@
 import json
+import shutil
 import os
 import re
-
 import quranConnections as connections
-
-
-
+ 
 VAULT_PATH       = "../Mushaf"          # root of your Obsidian vault
 #AUDIO_BASE_PATH  = "./data/audio"
 AUDIO_BASE_PATH  = "./data/AlafasyAudio"       # where audio files live on disk
@@ -20,6 +18,9 @@ SENTINEL_END   = "<!-- GENERATED:END -->"
 
 BISMILLAH = "بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ"
 #BISMILLAH = "﷽"
+
+THUMBNAILS_SRC  = "thumbnailGenerator/thumbnails"        # relative to main.py
+THUMBNAILS_DEST = f"{VAULT_PATH}/attachments"  
 
 DEFAULT_PERSONAL_SECTION = """
 ## 📝 Tafsir Notes
@@ -242,6 +243,7 @@ def build_generated_block(
     ur_name:       str,
     chapter_type:  str,
     tags:          list,
+    aliases:       list,
     ayah_text:     str,
     urdu_text:     str,
     english_text:  str,
@@ -252,7 +254,8 @@ def build_generated_block(
     """Returns the script-owned block, wrapped in sentinel markers."""
 
     audio   = audio_embed(surah_num, ayah_num)
-    tag_str = json.dumps(tags)           # produces ["tag1", "tag2"] for YAML
+    tag_str = json.dumps(tags) 
+    aliases_str = json.dumps(aliases)          # produces ["tag1", "tag2"] for YAML
 
     return f"""---
 surah: {surah_num} / 114
@@ -260,6 +263,7 @@ surah_name: {en_name} / {ar_name} / {ur_name}
 ayah: {ayah_num} / {total_ayahs}
 type: {chapter_type}
 tags: {tag_str}
+aliases: {aliases_str}
 ---
 {SENTINEL_START}
 ## 🔊 Recitation
@@ -651,6 +655,81 @@ def _write_path_index(all_personalities: list, folder: str, path: str) -> None:
     content  = "".join(lines)
     write_note(folder, filename, content)
     print(f"  [INDEX]   Personalities/_Index/{filename}")
+
+def get_surah_aliases(surahNumber:str) -> list:
+    """Return list of surah aliases for a given surah."""
+    surahNumber = surahNumber.zfill(3)
+    thumbnail_name = f"attachments/surah_{surahNumber}.png"
+    return [thumbnail_name]
+
+def copy_thumbnails() -> None:
+    """
+    Copies all surah_*.png files from thumbnailGenerator/thumbnails/
+    into the vault's attachments/ folder.
+ 
+    - Creates attachments/ if it does not exist.
+    - Skips files that are already up to date (same size + same mtime).
+    - Overwrites if the source file is newer or a different size.
+    - Prints a summary at the end.
+    """
+    print()
+    print("=" * 60)
+    print("  Thumbnails → Obsidian attachments/")
+    print("=" * 60)
+ 
+    src_dir  = os.path.abspath(THUMBNAILS_SRC)
+    dest_dir = os.path.abspath(THUMBNAILS_DEST)
+ 
+    # ── Guard: source folder must exist
+    if not os.path.isdir(src_dir):
+        print(f"  ⚠️  Source folder not found: {src_dir}")
+        print("       Run the thumbnail generator first.")
+        return
+ 
+    os.makedirs(dest_dir, exist_ok=True)
+ 
+    copied   = 0
+    skipped  = 0
+    errors   = []
+ 
+    # Collect and sort so output is ordered 001 → 114
+    thumbnails = sorted(
+        f for f in os.listdir(src_dir)
+        if f.startswith("surah_") and f.endswith(".png")
+    )
+ 
+    if not thumbnails:
+        print(f"  ⚠️  No surah_*.png files found in {src_dir}")
+        return
+ 
+    for filename in thumbnails:
+        src_path  = os.path.join(src_dir,  filename)
+        dest_path = os.path.join(dest_dir, filename)
+ 
+        try:
+            # Skip if destination exists and is identical (size + mtime)
+            if os.path.exists(dest_path):
+                src_stat  = os.stat(src_path)
+                dest_stat = os.stat(dest_path)
+                if (src_stat.st_size  == dest_stat.st_size and
+                        src_stat.st_mtime <= dest_stat.st_mtime):
+                    skipped += 1
+                    continue
+ 
+            shutil.copy2(src_path, dest_path)   # copy2 preserves metadata
+            copied += 1
+            print(f"  [COPIED]  {filename}")
+ 
+        except Exception as e:
+            errors.append((filename, str(e)))
+            print(f"  [ERROR]   {filename} — {e}")
+ 
+    print()
+    print(f"  ✅  {copied} copied,  {skipped} already up to date", end="")
+    print(f",  {len(errors)} errors" if errors else "")
+    print(f"  📁  {dest_dir}")
+    print("=" * 60)
+
 # ══════════════════════════════════════════════════════════════════════════════
 #  MAIN
 # ══════════════════════════════════════════════════════════════════════════════
@@ -696,11 +775,11 @@ def main():
             english_text = english[surah_num_str][ayah_idx]["text"]
             tafsir_text  = load_tafsir_ur(surah_num_str, ayah_num)
             tags         = connections.get_ayah_themes(surah_num, ayah_num)
-
+            aliases = get_surah_aliases(surah_num_str)
             # ── Build & write
             generated = build_generated_block(
                 surah_num, ayah_num, total_ayahs,
-                en_name, ar_name, ur_name, chapter_type, tags,
+                en_name, ar_name, ur_name, chapter_type, tags, aliases,
                 ayah_text, urdu_text, english_text, tafsir_text,
                 prev_link, next_link,
             )
@@ -721,6 +800,7 @@ def main():
     print("=" * 60)
     asma_ul_husna_reader()
     personalities_reader(personalities)
+    copy_thumbnails()
 
 if __name__ == "__main__":
     main()
