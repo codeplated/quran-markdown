@@ -4,7 +4,8 @@ import os
 import re
 import quranConnections as connections
  
-VAULT_PATH       = "../Mushaf"          # root of your Obsidian vault
+VAULT_PATH       = "../Mushaf" # root of your Obsidian vault     
+INDEX_PATH = "0 - Index"     
 #AUDIO_BASE_PATH  = "./data/audio"
 AUDIO_BASE_PATH  = "./data/AlafasyAudio"       # where audio files live on disk
 AUDIO_EXT        = ".mp3"
@@ -86,7 +87,7 @@ def asma_ul_husna_reader() -> None:
             quran_occurrences,
             key_ayaat
         )
-        folder = f"{VAULT_PATH}/Asma Ul Husna"
+        folder = f"{VAULT_PATH}/{INDEX_PATH}/Asma Ul Husna"
         filename     = f"{number} - {arabic}.md"
         write_note(folder, filename, content)
 
@@ -323,22 +324,27 @@ def write_note(folder: str, filename: str, content: str) -> bool:
 
 def create_index():
     """Generates the master thematic index note."""
-    lines    = ["# 🗂 The General Topics of the Quran\n"]
-    counter  = 0
+    lines   = ["# 🗂 The General Topics of the Quran\n"]
+    counter = 0
     category = None
-
+ 
     for key, (emoji, theme, en_title, ur_title, description) in connections.THEMES.items():
         if theme != category:
             category = theme
             lines.append(f"\n### {theme}\n")
-            lines.append("| # | Topic | Description |\n")
-            lines.append("|---|-------|-------------|\n")
+            lines.append("| # | Topic | Tag | Description |\n")
+            lines.append("|---|-------|-----|-------------|\n")
         counter += 1
-        lines.append(f"| {counter} | {emoji} **{en_title}** {ur_title} | {description} |\n")
-
+        lines.append(
+            f"| {counter} | {emoji} **{en_title}** {ur_title} "
+            f"| [#{key}](#{key}) "
+            f"| {description} |\n"
+        )
+ 
     content = "".join(lines)
-    write_note(f"{VAULT_PATH}/0 - Index", "index.md", content)
-    print("  [INDEX]   0 - Index/index.md")
+    write_note(f"{VAULT_PATH}/{INDEX_PATH}", "index.md", content)
+    print("  [INDEX]   index.md")
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  PERSONALITIES — Quran figures, angels, jinn, companions, groups
@@ -502,7 +508,7 @@ tags: {tags_str}
 
 def _get_personality_filepath(p: dict) -> tuple:
     """Returns (folder, filename, filepath) for a personality note."""
-    folder   = f"{VAULT_PATH}/Personalities"
+    folder   = f"{VAULT_PATH}/{INDEX_PATH}/Personalities"
     filename = f"{p['name_english']} — {p['name_arabic']}.md"
     filepath = os.path.join(folder, filename)
     return folder, filename, filepath
@@ -548,7 +554,7 @@ def personalities_reader(all_personalities: list) -> None:
 def _write_personalities_indexes(all_personalities: list) -> None:
     """Writes four clean index notes."""
 
-    folder = f"{VAULT_PATH}/Personalities/_Index"
+    folder = f"{VAULT_PATH}/{INDEX_PATH}/Personalities/_Index"
 
     _write_all_index(all_personalities, folder)
     _write_path_index(all_personalities, folder, "straight")
