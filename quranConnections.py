@@ -1,645 +1,440 @@
 """
-quran_connections.py
-=====================
+quranConnections.py
+===================
 The thematic knowledge graph for the Quran vault.
 
 This file defines:
-  1. THEMES          — the full taxonomy of topics (deep, not shallow)
-  2. AYAH_TAGS       — which ayaat belong to which themes (hand-curated seed set
-                       covering ~400 of the most-studied ayaat; grows over time)
-  3. RELATED_TOPICS  — explicit cross-theme relationships
-  4. build_index()   — returns a dict: theme_key → list of (surah, ayah) tuples
-  5. get_ayah_themes()— returns themes for a single ayah
+  1. THEMES          — the tag vocabulary. Every tag on an ayah, personality
+                       or Name of Allah must be a key here.
+  2. RETIRED_TAGS    — old / duplicate tag names and the theme that replaced them
+  3. AYAH_TAGS       — (surah, ayah) → [theme keys], loaded from ayah_tags/sNNN.py
+  4. RELATED_TOPICS  — cross-theme relationships
+  5. get_ayah_themes(), build_index(), get_related_themes()
 
-This module is imported by quranImportScript.py and by generate_indexes.py.
+Tagging rules and progress: TAGGING_PROGRESS.md
+Validate everything with:   python tag_audit.py
 """
+
+from ayah_tags import load_all as _load_ayah_tags
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  THEME TAXONOMY
-#  Each theme has:  key, emoji, title, urdu_title, description
+#  key: (category, title, urdu_title, description)
+#  Categories appear on the index page in the order they first occur here.
 # ══════════════════════════════════════════════════════════════════════════════
 
 THEMES = {
-    # ── Aqeedah (Belief) ──────────────────────────────────────────────────────
-    "tawheed":         ("🕌", "Belief", "Tawheed",              "توحید",         "Oneness of Allah"),
-    "asma_ul_husna":   ("✨", "Belief", "Asma ul Husna",         "اسماء الحسنی",  "Names & Attributes of Allah"),
-    "akhirah":         ("⚖️", "Belief", "Akhirah",               "آخرت",          "The Hereafter & Day of Judgment"),
-    "jannah":          ("🌿", "Belief", "Jannah",                "جنت",           "Paradise & its descriptions"),
-    "jahannam":        ("🔥", "Belief", "Jahannam",              "جہنم",          "Hell & divine warnings"),
-    "qadr":            ("📜", "Belief", "Qadr",                  "قدر",           "Divine Decree & Destiny"),
-    "prophethood":     ("🌙", "Belief", "Prophethood",           "نبوت",          "Prophethood & Messengership"),
-    "revelation":      ("📖", "Belief", "Revelation",            "وحی",           "The Quran & Divine Revelation"),
-    "angels":          ("👼", "Belief", "Angels & Unseen",       "ملائکہ",        "Angels, Jinn & the Unseen"),
+    # ── Belief (Aqeedah) ──────────────────────────────────────────────────────
+    "tawheed":             ("Belief",     "Tawheed",                  "توحید",                  "Oneness of Allah — His lordship, sole right to worship & uniqueness"),
+    "asma_ul_husna":       ("Belief",     "Asma ul Husna",            "اسماء الحسنیٰ",          "Names & attributes of Allah"),
+    "rahmah":              ("Belief",     "Mercy & Forgiveness",      "رحمت و مغفرت",           "Allah's vast mercy, forgiveness & kindness to His servants"),
+    "iman":                ("Belief",     "Iman",                     "ایمان",                  "Faith, its pillars & the qualities of true believers"),
+    "shirk":               ("Belief",     "Shirk",                    "شرک",                    "Associating partners with Allah — idols, false gods & their refutation"),
+    "kufr":                ("Belief",     "Kufr",                     "کفر",                    "Disbelief, denial of the truth & the attitudes of the disbelievers"),
+    "nifaq":               ("Belief",     "Nifaq",                    "نفاق",                   "Hypocrisy — the hypocrites' traits, schemes & exposure"),
+    "hidayah":             ("Belief",     "Guidance",                 "ہدایت و ضلالت",          "Guidance & misguidance — how and why hearts are guided or led astray"),
+    "qadr":                ("Belief",     "Qadr",                     "تقدیر",                  "Divine decree, Allah's will & destiny"),
+    "prophethood":         ("Belief",     "Prophethood",              "نبوت و رسالت",           "The messengers — their mission, humanity & belief in all of them"),
+    "revelation":          ("Belief",     "Revelation",               "وحی و کتب",              "Wahy — the Quran's divine origin, earlier scriptures & the challenge to imitate it"),
+    "angels":              ("Belief",     "Angels",                   "ملائکہ",                 "Angels — their nature, duties & the unseen world"),
+    "jinn":                ("Belief",     "Jinn",                     "جنات",                   "The jinn — their creation, believers & disbelievers among them"),
+    "shaytan":             ("Belief",     "Shaytan",                  "شیطان",                  "Iblis & the devils — enmity, whispers, deception & magic"),
 
-    # ── Prophet Stories ───────────────────────────────────────────────────────
-    "story_adam":      ("🌱", "Prophets", "Prophet Adam",          "آدم علیہ السلام","Creation, fall & repentance"),
-    "story_ibrahim":   ("🔥", "Prophets", "Prophet Ibrahim",       "ابراہیم علیہ السلام","Father of monotheism"),
-    "story_musa":      ("⚡", "Prophets", "Prophet Musa",          "موسیٰ علیہ السلام","Exodus, Pharaoh & the Law"),
-    "story_isa":       ("🕊️", "Prophets", "Prophet Isa",           "عیسیٰ علیہ السلام","Birth, miracles & mission"),
-    "story_yusuf":     ("⭐", "Prophets", "Prophet Yusuf",         "یوسف علیہ السلام","Patience, betrayal & triumph"),
-    "story_nuh":       ("🚢", "Prophets", "Prophet Nuh",           "نوح علیہ السلام","Flood, patience & calling people"),
-    "story_dawud":     ("🎵", "Prophets", "Prophet Dawud",         "داؤد علیہ السلام","Kingship, Psalms & repentance"),
-    "story_sulayman":  ("👑", "Prophets", "Prophet Sulayman",      "سلیمان علیہ السلام","Kingdom, wisdom & gratitude"),
-    "story_yunus":     ("🐋", "Prophets", "Prophet Yunus",         "یونس علیہ السلام","Despair, dua & mercy"),
-    "story_ayyub":     ("💪", "Prophets", "Prophet Ayyub",         "ایوب علیہ السلام","Suffering, patience & healing"),
-    "story_muhammad":  ("🌟", "Prophets", "Prophet Muhammad ﷺ",   "محمد ﷺ",        "Life, mission & character"),
+    # ── Hereafter (Akhirah) ───────────────────────────────────────────────────
+    "death_reminder":      ("Hereafter",  "Death & the Grave",        "موت و برزخ",             "Death, the barzakh & preparing to meet Allah"),
+    "resurrection":        ("Hereafter",  "Resurrection",             "بعث بعد الموت",          "Life after death — its proofs & answers to those who deny it"),
+    "akhirah":             ("Hereafter",  "Akhirah & Judgment Day",   "آخرت و یوم الحساب",      "The Hour, the Day of Judgment, reckoning, scales & intercession"),
+    "jannah":              ("Hereafter",  "Jannah",                   "جنت",                    "Paradise — its gardens, delights & people"),
+    "jahannam":            ("Hereafter",  "Jahannam",                 "جہنم",                   "Hell — its punishment & its people"),
+
+    # ── Prophets (Anbiya) ─────────────────────────────────────────────────────
+    "story_adam":          ("Prophets",   "Prophet Adam",             "آدم علیہ السلام",        "Creation of Adam, the angels' prostration, Iblis & repentance"),
+    "story_idris":         ("Prophets",   "Prophet Idris",            "ادریس علیہ السلام",      "A truthful prophet raised to a high station"),
+    "story_nuh":           ("Prophets",   "Prophet Nuh",              "نوح علیہ السلام",        "Centuries of da'wah, the ark & the flood"),
+    "story_hud":           ("Prophets",   "Prophet Hud",              "ہود علیہ السلام",        "The people of 'Ad, their might & the destroying wind"),
+    "story_salih":         ("Prophets",   "Prophet Salih",            "صالح علیہ السلام",       "Thamud, the she-camel & the mighty blast"),
+    "story_ibrahim":       ("Prophets",   "Prophet Ibrahim",          "ابراہیم علیہ السلام",    "Khalilullah — breaking the idols, the fire, the sacrifice & the Kaaba"),
+    "story_lut":           ("Prophets",   "Prophet Lut",              "لوط علیہ السلام",        "The people of Lut, their indecency & the overturned cities"),
+    "story_ismail":        ("Prophets",   "Prophet Ismail",           "اسماعیل علیہ السلام",    "The sacrifice, raising the Kaaba & true to his promise"),
+    "story_ishaq":         ("Prophets",   "Prophet Ishaq",            "اسحاق علیہ السلام",      "Glad tidings of a son to Ibrahim & Sarah in old age"),
+    "story_yaqub":         ("Prophets",   "Prophet Yaqub",            "یعقوب علیہ السلام",      "Beautiful patience in grief & his final counsel to his sons"),
+    "story_yusuf":         ("Prophets",   "Prophet Yusuf",            "یوسف علیہ السلام",       "The dream, the well, the prison, the palace & forgiveness"),
+    "story_ayyub":         ("Prophets",   "Prophet Ayyub",            "ایوب علیہ السلام",       "Illness, loss & patience rewarded"),
+    "story_shuayb":        ("Prophets",   "Prophet Shuayb",           "شعیب علیہ السلام",       "Madyan & Aykah — full measure & honest trade"),
+    "story_musa":          ("Prophets",   "Prophet Musa",             "موسیٰ علیہ السلام",      "Pharaoh, the exodus, the Torah & the journey with Khidr"),
+    "story_harun":         ("Prophets",   "Prophet Harun",            "ہارون علیہ السلام",      "Musa's brother, minister & fellow messenger"),
+    "story_dhulkifl":      ("Prophets",   "Prophet Dhul-Kifl",        "ذوالکفل علیہ السلام",    "Among the patient & the best"),
+    "story_dawud":         ("Prophets",   "Prophet Dawud",            "داؤد علیہ السلام",       "Victory over Jalut, kingship, the Zabur & repentance"),
+    "story_sulayman":      ("Prophets",   "Prophet Sulayman",         "سلیمان علیہ السلام",     "A kingdom over jinn & wind, the ant, the hoopoe & the Queen of Saba"),
+    "story_ilyas":         ("Prophets",   "Prophet Ilyas",            "الیاس علیہ السلام",      "Calling his people away from the idol Ba'l"),
+    "story_alyasa":        ("Prophets",   "Prophet Al-Yasa",          "الیسع علیہ السلام",      "Among the chosen & the best"),
+    "story_yunus":         ("Prophets",   "Prophet Yunus",            "یونس علیہ السلام",       "Leaving his people, the whale, the dua in the darkness & mercy"),
+    "story_zakariya":      ("Prophets",   "Prophet Zakariya",         "زکریا علیہ السلام",      "Guardian of Maryam — a quiet dua answered with Yahya"),
+    "story_yahya":         ("Prophets",   "Prophet Yahya",            "یحییٰ علیہ السلام",      "Given wisdom as a child — chaste, dutiful & at peace"),
+    "story_isa":           ("Prophets",   "Prophet Isa",              "عیسیٰ علیہ السلام",      "Miraculous birth, miracles, the disciples & being raised"),
+    "story_muhammad":      ("Prophets",   "Prophet Muhammad ﷺ",       "محمد ﷺ",                 "His life, mission, character & rights over the believers"),
+
+    # ── Narratives (Qasas) ────────────────────────────────────────────────────
+    "story_maryam":        ("Narratives", "Maryam",                   "مریم علیہا السلام",      "Her birth, devotion & the miraculous birth of Isa"),
+    "story_luqman":        ("Narratives", "Luqman",                   "لقمان",                  "Luqman's wise counsel to his son"),
+    "story_dhulqarnayn":   ("Narratives", "Dhul-Qarnayn",             "ذوالقرنین",              "A just ruler's journeys, the barrier & Ya'juj and Ma'juj"),
+    "story_ashab_al_kahf": ("Narratives", "People of the Cave",       "اصحاب کہف",              "Youths who fled with their faith & slept for centuries"),
+    "story_bani_israil":   ("Narratives", "Bani Israil",              "بنی اسرائیل",            "Children of Israel — favours, covenants, the calf, the cow & the Sabbath"),
+
+    # ── Seerah ────────────────────────────────────────────────────────────────
+    "sahabah":             ("Seerah",     "Sahabah",                  "صحابہ کرام",             "The Companions — Muhajirun, Ansar & their virtues"),
+    "prophets_household":  ("Seerah",     "Prophet's Household",      "اہل بیت و ازواج مطہرات", "The Prophet's ﷺ wives & family — the Mothers of the Believers"),
+    "hijrah":              ("Seerah",     "Hijrah",                   "ہجرت",                   "Migrating for Allah's sake — Makkah to Madinah & its reward"),
+    "isra_miraj":          ("Seerah",     "Isra & Mi'raj",            "اسراء و معراج",          "The Night Journey & the Ascension"),
+    "battle_badr":         ("Seerah",     "Battle of Badr",           "غزوۂ بدر",               "The Day of Criterion — 2 AH"),
+    "battle_uhud":         ("Seerah",     "Battle of Uhud",           "غزوۂ احد",               "Victory, disobedience & lessons in setback — 3 AH"),
+    "battle_ahzab":        ("Seerah",     "Battle of the Trench",     "غزوۂ احزاب",             "The Confederates' siege of Madinah — 5 AH"),
+    "treaty_hudaybiyah":   ("Seerah",     "Treaty of Hudaybiyah",     "صلح حدیبیہ",             "The pledge under the tree & the clear victory — 6 AH"),
+    "battle_hunayn":       ("Seerah",     "Battle of Hunayn",         "غزوۂ حنین",              "When great numbers impressed them — 8 AH"),
+    "expedition_tabuk":    ("Seerah",     "Expedition of Tabuk",      "غزوۂ تبوک",              "Hardship, excuses & the three who stayed behind — 9 AH"),
+    "incident_ifk":        ("Seerah",     "The Slander (Ifk)",        "واقعۂ افک",              "The slander against Aisha & its lessons"),
 
     # ── Worship (Ibadah) ──────────────────────────────────────────────────────
-    "salah":           ("🕌", "Worship", "Salah",                 "نماز",          "Prayer — its importance & rules"),
-    "zakat":           ("💰", "Worship", "Zakat & Sadaqah",       "زکوٰۃ و صدقہ", "Charity, giving & purification of wealth"),
-    "sawm":            ("🌙", "Worship", "Sawm",                  "روزہ",          "Fasting & Ramadan"),
-    "hajj":            ("🕋", "Worship", "Hajj & Umrah",          "حج و عمرہ",     "Pilgrimage & its rituals"),
-    "dhikr":           ("💭", "Worship", "Dhikr & Dua",           "ذکر و دعا",     "Remembrance of Allah & supplication"),
-    "tawbah":          ("🤲", "Worship", "Tawbah",                "توبہ",          "Repentance & seeking forgiveness"),
-    "quran_recitation":("📖", "Worship", "Quran & Tilawah",       "تلاوت قرآن",   "Reciting, pondering & living by Quran"),
+    "salah":               ("Worship",    "Salah",                    "نماز",                   "Prayer — its importance, times & manner"),
+    "taharah":             ("Worship",    "Taharah",                  "طہارت",                  "Purification — wudu, ghusl & tayammum"),
+    "zakat":               ("Worship",    "Zakat & Sadaqah",          "زکوٰۃ و صدقہ",           "Obligatory charity, voluntary giving & spending in Allah's way"),
+    "sawm":                ("Worship",    "Sawm",                     "روزہ",                   "Fasting & Ramadan"),
+    "hajj":                ("Worship",    "Hajj & Umrah",             "حج و عمرہ",              "Pilgrimage, its rites & sacrifice"),
+    "kaaba":               ("Worship",    "Kaaba & Qiblah",           "کعبہ و قبلہ",            "The Kaaba, the qiblah & the sacred mosques"),
+    "dhikr":               ("Worship",    "Dhikr & Tasbih",           "ذکر و تسبیح",            "Remembrance & glorification of Allah"),
+    "dua":                 ("Worship",    "Dua",                      "دعا",                    "Supplications of the prophets & the believers"),
+    "tawbah":              ("Worship",    "Tawbah",                   "توبہ و استغفار",         "Repentance, seeking forgiveness & returning to Allah"),
+    "quran_recitation":    ("Worship",    "Tilawah & Tadabbur",       "تلاوت و تدبر",           "Reciting, reflecting on & living by the Quran"),
 
     # ── Character (Akhlaq) ────────────────────────────────────────────────────
-    "sabr":            ("⏳", "Character", "Sabr",                  "صبر",           "Patience in hardship & trial"),
-    "shukr":           ("🙏", "Character", "Shukr",                 "شکر",           "Gratitude to Allah"),
-    "tawakkul":        ("🕊️", "Character", "Tawakkul",              "توکل",          "Reliance & trust in Allah"),
-    "ikhlas":          ("💎", "Character", "Ikhlas",                "اخلاص",         "Sincerity of intention"),
-    "taqwa":           ("🛡️", "Character", "Taqwa",                 "تقویٰ",         "God-consciousness & piety"),
-    "ihsan":           ("✨", "Character", "Ihsan",                 "احسان",         "Excellence, goodness & beauty in action"),
-    "sidq":            ("✅", "Character", "Sidq & Amanah",         "صدق و امانت",   "Truthfulness & trustworthiness"),
-    "adl":             ("⚖️", "Character", "Adl",                   "عدل",           "Justice & fairness"),
-    "hilm":            ("🌊", "Character", "Hilm & Afw",            "حلم و عفو",     "Forbearance, mercy & forgiveness"),
-    "kibr":            ("⚠️", "Character", "Kibr & Pride",          "تکبر",          "Arrogance as a spiritual disease"),
-    "hasad":           ("💔", "Character", "Hasad & Envy",          "حسد",           "Envy & spiritual poison"),
+    "sabr":                ("Character",  "Sabr",                     "صبر",                    "Patience & steadfastness — in hardship, in obedience & against sin"),
+    "shukr":               ("Character",  "Shukr",                    "شکر",                    "Gratitude for Allah's blessings — and the ingratitude of man"),
+    "tawakkul":            ("Character",  "Tawakkul",                 "توکل",                   "Reliance & trust in Allah"),
+    "ikhlas":              ("Character",  "Ikhlas",                   "اخلاص",                  "Sincerity of intention & avoiding showing off"),
+    "taqwa":               ("Character",  "Taqwa",                    "تقویٰ",                  "God-consciousness, piety & awe of Allah"),
+    "ihsan":               ("Character",  "Ihsan",                    "احسان",                  "Excellence, goodness & kindness in action"),
+    "sidq":                ("Character",  "Sidq",                     "صدق",                    "Truthfulness in word & deed — and the evil of lying"),
+    "amanah":              ("Character",  "Amanah & Promises",        "امانت و عہد",            "Trusts, promises, oaths & covenants"),
+    "adl":                 ("Character",  "Adl",                      "عدل",                    "Justice & fairness — in judgment, testimony & dealings"),
+    "hilm":                ("Character",  "Hilm & Afw",               "حلم و عفو",              "Forbearance, restraining anger & forgiving others"),
+    "kibr":                ("Character",  "Arrogance & Humility",     "تکبر و عاجزی",           "Pride as a disease of the heart & the humility Allah loves"),
+    "hasad":               ("Character",  "Hasad",                    "حسد",                    "Envy & jealousy"),
+    "haya":                ("Character",  "Haya",                     "حیا و عفت",              "Modesty, chastity & hijab"),
+    "speech_ethics":       ("Character",  "Ethics of Speech",         "زبان کے آداب",           "Good words — and backbiting, mockery, slander & idle talk"),
+    "adab":                ("Character",  "Adab",                     "آداب",                   "Manners — greetings, seeking permission, gatherings & conduct"),
+
+    # ── Heart & Spirit ────────────────────────────────────────────────────────
+    "tazkiyah":            ("Spirit",     "Tazkiyah",                 "تزکیۂ نفس",              "Purifying the soul — the nafs, desires & hearts sealed or softened"),
+    "dunya":               ("Spirit",     "Dunya",                    "دنیا",                   "The worldly life — its reality, allure & heedlessness"),
+    "purpose_of_life":     ("Spirit",     "Purpose of Life",          "مقصدِ حیات",             "Why we exist — worship, vicegerency & the test"),
+    "love_of_allah":       ("Spirit",     "Love of Allah",            "محبتِ الٰہی",            "Whom Allah loves, whom He does not & loving Him"),
+    "hope_raja":           ("Spirit",     "Hope & Raja",              "امید",                   "Hope in Allah & never despairing of His mercy"),
+    "anxiety_fear":        ("Spirit",     "Anxiety, Fear & Sakinah",  "خوف و سکینت",            "Worry, fear & finding tranquility of heart"),
+    "grief_loss":          ("Spirit",     "Grief & Loss",             "غم",                     "Sorrow, loss & consolation"),
+    "trial_test":          ("Spirit",     "Trials & Tests",           "آزمائش",                 "Why hardship & ease come — the tests of this life"),
 
     # ── Daily Life ────────────────────────────────────────────────────────────
-    "rizq":            ("🌾", "Life", "Rizq",                  "رزق",           "Sustenance, provision & livelihood"),
-    "wealth":          ("💵", "Life", "Wealth & Spending",     "مال و خرچ",     "Earning, spending & wealth management"),
-    "trade":           ("🤝", "Life", "Trade & Business",      "تجارت",         "Business ethics & commerce"),
-    "debt":            ("📋", "Life", "Debt & Loans",          "قرض",           "Borrowing, lending & financial obligations"),
-    "time":            ("⏰", "Life", "Time & Its Value",      "وقت",           "Time management & its importance"),
-    "knowledge":       ("🔬", "Life", "Knowledge & Wisdom",   "علم و حکمت",    "Seeking knowledge & wisdom"),
-    "health":          ("💚", "Life", "Health & Body",         "صحت",           "Body, food & physical wellbeing"),
-    "food_halal":      ("🍽️", "Life", "Halal & Haram Food",   "حلال و حرام",   "Permissible and forbidden food"),
-    "work_ethics":     ("🔨", "Life", "Work & Effort",         "محنت",          "Effort, striving & work ethics"),
+    "rizq":                ("Life",       "Rizq",                     "رزق",                    "Sustenance & provision — Allah as the Provider"),
+    "wealth":              ("Life",       "Wealth & Spending",        "مال و خرچ",              "Earning & spending — hoarding, stinginess & extravagance"),
+    "trade":               ("Life",       "Trade & Business",         "تجارت",                  "Business ethics, contracts & fair measure"),
+    "debt":                ("Life",       "Debt & Loans",             "قرض",                    "Lending, recording debts & easing the debtor"),
+    "riba":                ("Life",       "Riba",                     "سود",                    "Usury & interest — its prohibition & consequences"),
+    "time":                ("Life",       "Time",                     "وقت",                    "Time, its value & the shortness of life"),
+    "knowledge":           ("Life",       "Knowledge & Wisdom",       "علم و حکمت",             "Seeking knowledge, wisdom, scholars & using reason"),
+    "health":              ("Life",       "Health & Healing",         "صحت و شفا",              "The body, illness & healing"),
+    "food_halal":          ("Life",       "Halal & Haram Food",       "حلال و حرام",            "Permissible & forbidden food, drink & intoxicants"),
+    "work_ethics":         ("Life",       "Work & Effort",            "محنت",                   "Effort, striving & earning a living"),
 
     # ── Family & Relationships ────────────────────────────────────────────────
-    "marriage":        ("💍", "Relations", "Marriage & Nikah",      "نکاح",          "Marriage, its rights & purposes"),
-    "family":          ("👨‍👩‍👧‍👦", "Relations", "Family & Kinship",    "خاندان",        "Family bonds, duties & rights"),
-    "parenting":       ("👶", "Relations", "Parenting & Children",  "اولاد",         "Rights of children & parenting"),
-    "parents":         ("❤️", "Relations", "Parents & Elders",      "والدین",        "Honouring parents & the elderly"),
-    "divorce":         ("📜", "Relations", "Divorce & Separation",  "طلاق",          "Rules & ethics of divorce"),
-    "inheritance":     ("🏠", "Relations", "Inheritance",           "وراثت",         "Laws of inheritance"),
-    "orphans":         ("🤲", "Relations", "Orphans & Vulnerable",  "یتیم",          "Care for orphans & the vulnerable"),
+    "marriage":            ("Relations",  "Marriage & Nikah",         "نکاح",                   "Marriage, its rights & purposes"),
+    "family":              ("Relations",  "Family & Kinship",         "خاندان",                 "Family bonds, kinship duties & rights"),
+    "parents":             ("Relations",  "Parents & Elders",         "والدین",                 "Honouring parents & the elderly"),
+    "parenting":           ("Relations",  "Parenting & Children",     "اولاد",                  "Children, their rights & raising them"),
+    "women":               ("Relations",  "Women",                    "خواتین",                 "The dignity & rights of women; exemplary women of the Quran"),
+    "divorce":             ("Relations",  "Divorce & Iddah",          "طلاق و عدت",             "Divorce, waiting periods & parting with kindness"),
+    "inheritance":         ("Relations",  "Inheritance & Wills",      "وراثت و وصیت",           "Shares of inheritance & bequests"),
+    "orphans":             ("Relations",  "Orphans & the Vulnerable", "یتیم",                   "Care for orphans & protecting their wealth"),
 
-    # ── Society & Governance ─────────────────────────────────────────────────
-    "community":       ("🌍", "Society", "Ummah & Community",     "امت",           "Muslim community & brotherhood"),
-    "leadership":      ("👑", "Society", "Leadership & Authority","قیادت",         "Leadership, authority & responsibility"),
-    "shura":           ("🗣️", "Society", "Consultation & Shura",  "شوریٰ",         "Consultation & collective decision-making"),
-    "oppression":      ("✊", "Society", "Oppression & Dhulm",    "ظلم",           "Standing against oppression"),
-    "conflict":        ("🕊️", "Society", "Peace & Conflict",      "صلح و جنگ",     "War, peace & conflict resolution"),
-    "social_justice":  ("⚖️", "Society", "Social Justice",        "سماجی انصاف",   "Economic & social justice"),
-    "environment":     ("🌿", "Society", "Environment & Earth",   "زمین",          "Stewardship of the earth"),
-
-    # ── Spiritual States & Struggles ─────────────────────────────────────────
-    "anxiety_fear":    ("😟", "Spirit", "Anxiety & Fear",        "خوف و غم",      "Dealing with worry, grief & fear"),
-    "hope_raja":       ("🌅", "Spirit", "Hope & Raja",           "امید",          "Hope in Allah's mercy"),
-    "grief_loss":      ("🌧️", "Spirit", "Grief & Loss",          "غم",            "Coping with loss & hardship"),
-    "trial_test":      ("🌊", "Spirit", "Trials & Tests",        "آزمائش",        "Purpose of tests & afflictions"),
-    "gratitude_life":  ("☀️", "Spirit", "Purpose of Life",       "مقصدِ حیات",    "Why we exist & what we are here for"),
-    "tawbah_return":   ("🔄", "Spirit", "Return to Allah",       "رجوع الی اللہ", "Coming back to Allah after sin"),
-    "death_reminder":  ("🌑", "Spirit", "Death & Its Reminder",  "موت",           "Remembering death & preparing for it"),
+    # ── Society & Law ─────────────────────────────────────────────────────────
+    "community":           ("Society",    "Ummah & Brotherhood",      "امت و اخوت",             "Unity, brotherhood & avoiding division"),
+    "wala_bara":           ("Society",    "Alliances & Loyalty",      "ولاء و براء",            "Whom believers take as allies & protectors"),
+    "ahl_al_kitab":        ("Society",    "People of the Book",       "اہلِ کتاب",              "Jews & Christians — dialogue, their claims & critique"),
+    "dawah":               ("Society",    "Da'wah",                   "دعوت و تبلیغ",           "Calling to Allah — enjoining good & forbidding evil"),
+    "leadership":          ("Society",    "Leadership & Authority",   "قیادت",                  "Rulers, authority, obedience & responsibility"),
+    "shura":               ("Society",    "Shura",                    "شوریٰ",                  "Consultation & collective decision-making"),
+    "criminal_law":        ("Society",    "Crime & Punishment",       "حدود و قصاص",            "Qisas, hudud & blood money"),
+    "oppression":          ("Society",    "Oppression",               "ظلم",                    "Dhulm — oppressors, the oppressed & standing against injustice"),
+    "conflict":            ("Society",    "Jihad, War & Peace",       "جہاد، جنگ و صلح",        "Fighting in Allah's way, its ethics, treaties & peacemaking"),
+    "social_justice":      ("Society",    "Social Justice",           "سماجی انصاف",            "Rights of the poor & needy, fair distribution & freeing slaves"),
+    "environment":         ("Society",    "Earth & Corruption",       "زمین و فساد",            "Stewardship of the earth & spreading corruption (fasad) in it"),
 
     # ── Signs of Allah ────────────────────────────────────────────────────────
-    "nature_signs":    ("🌌", "Signs", "Signs in Nature",       "قدرت کی نشانیاں","Creation as evidence of Allah"),
-    "history_lessons": ("🏛️", "Signs", "Lessons from History",  "تاریخ کے سبق", "Nations destroyed & lessons to draw"),
+    "nature_signs":        ("Signs",      "Signs in Creation",        "قدرت کی نشانیاں",        "The heavens & earth, rain, plants, seas, night & day as signs of Allah"),
+    "human_creation":      ("Signs",      "Creation of Mankind",      "تخلیقِ انسان",           "From clay & a drop — stages of creation & human nature"),
+    "animals":             ("Signs",      "Animals",                  "جانور",                  "Cattle, bees, birds & other creatures & their lessons"),
+    "miracles":            ("Signs",      "Miracles",                 "معجزات",                 "Signs & miracles granted to the prophets"),
+    "history_lessons":     ("Signs",      "Lessons from History",     "تاریخ کے سبق",           "Past nations — their rise, destruction & what to learn"),
 
     # ── Quran Meta ────────────────────────────────────────────────────────────
-    "commands":        ("📌", "Meta", "Direct Commands",       "اوامر",         "Explicit commands from Allah"),
-    "prohibitions":    ("🚫", "Meta", "Prohibitions",          "نواہی",         "What Allah has forbidden"),
-    "glad_tidings":    ("🎉", "Meta", "Glad Tidings",          "بشارت",         "Promises of reward & mercy"),
-    "warnings":        ("⚠️", "Meta", "Warnings",             "تنبیہ",         "Divine warnings & admonitions"),
-    "parables":        ("💡", "Meta", "Parables & Amthal",     "امثال",         "Quranic parables & metaphors"),
-    "oaths":           ("☀️", "Meta", "Divine Oaths",          "قسمیں",         "Allah's oaths & what they emphasize"),
+    "muqattaat":           ("Meta",       "Muqatta'at",               "حروفِ مقطعات",           "The disjointed letters that open 29 surahs"),
+    "sajdah_tilawah":      ("Meta",       "Sajdah Ayaat",             "آیاتِ سجدہ",             "Ayaat of prostration during recitation"),
+    "o_believers":         ("Meta",       "O You Who Believe",        "یا ایہا الذین آمنوا",    "Direct addresses to the believers"),
+    "o_mankind":           ("Meta",       "O Mankind",                "یا ایہا الناس",          "Addresses to all of humanity"),
+    "they_ask_you":        ("Meta",       "They Ask You",             "یسئلونک",                "Questions put to the Prophet ﷺ & their answers"),
+    "commands":            ("Meta",       "Direct Commands",          "اوامر",                  "Explicit commands from Allah"),
+    "prohibitions":        ("Meta",       "Prohibitions",             "نواہی",                  "What Allah has forbidden"),
+    "glad_tidings":        ("Meta",       "Glad Tidings",             "بشارت",                  "Promises of reward & mercy"),
+    "warnings":            ("Meta",       "Warnings",                 "تنبیہ",                  "Divine warnings & admonitions"),
+    "parables":            ("Meta",       "Parables & Amthal",        "امثال",                  "Quranic parables, similitudes & examples"),
+    "oaths":               ("Meta",       "Divine Oaths",             "قسمیں",                  "Allah's oaths & what they emphasize"),
 }
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  RETIRED TAGS
+#  replacement theme: [old names that meant the same thing]
+#  Kept as a record of every merge, and so tag_audit.py can point stray old
+#  names at their replacement. Old names must never be used as tags again.
+# ══════════════════════════════════════════════════════════════════════════════
+
+RETIRED_TAGS = {
+    # ── duplicate ayah themes ─────────────────────────────────────────────────
+    "tawbah":            ["tawbah_return", "repentance"],   # "Return to Allah" = Tawbah
+    "purpose_of_life":   ["gratitude_life", "khalifah"],    # key said gratitude; theme was Purpose of Life
+
+    # ── free-form personality tags, now on the shared vocabulary ─────────────
+    "sabr":              ["patience"],
+    "kibr":              ["arrogance", "humility"],
+    "hasad":             ["envy", "jealousy"],
+    "iman":              ["faith", "islam", "mass-faith"],
+    "kufr":              ["disbelief"],
+    "nifaq":             ["hypocrisy", "deceit"],
+    "shirk":             ["idol-worship"],
+    "shaytan":           ["iblis", "magic"],
+    "prophethood":       ["prophet", "prophets"],
+    "angels":            ["angel"],
+    "sahabah":           ["companion"],
+    "miracles":          ["miracle"],
+    "trial_test":        ["test", "trial", "fitna"],
+    "grief_loss":        ["grief"],
+    "hope_raja":         ["hope"],
+    "haya":              ["chastity"],
+    "sidq":              ["truth", "truthfulness", "siddiq", "siddiqah", "confession"],
+    "amanah":            ["trustworthy", "covenant", "betrayal"],
+    "adl":               ["justice"],
+    "oppression":        ["tyrant", "oppressor", "persecution", "persecutor", "persecutors",
+                          "enabler", "liberation", "coercion"],
+    "knowledge":         ["wisdom", "scholar", "divine-knowledge", "advice"],
+    "shukr":             ["gratitude", "ingratitude", "blessings"],
+    "rahmah":            ["mercy", "restoration"],
+    "leadership":        ["king", "queen"],
+    "health":            ["illness"],
+    "rizq":              ["provision"],
+    "nature_signs":      ["rain"],
+    "human_creation":    ["creation"],
+    "qadr":              ["free-will", "apparent-vs-real"],
+    "resurrection":      ["trumpet", "resurrection-proof"],
+    "akhirah":           ["judgment-day", "hereafter"],
+    "death_reminder":    ["death", "soul", "appointed-time", "grave", "barzakh", "questioning"],
+    "jahannam":          ["hell", "lowest-hell", "condemned"],
+    "jannah":            ["paradise", "welcome"],
+    "revelation":        ["wahi", "quran", "law", "psalms"],
+    "women":             ["woman", "greatest-women", "mother"],
+    "family":            ["brotherhood", "adoption", "heir"],
+    "marriage":          ["partnership"],
+    "trade":             ["business-ethics"],
+    "criminal_law":      ["murder", "first-murder"],
+    "history_lessons":   ["destroyed", "destruction", "earthquake", "collective-responsibility",
+                          "normalization"],
+    "warnings":          ["warning"],
+    "ihsan":             ["ithar", "character"],
+    "hilm":              ["non-retaliation"],
+    "tazkiyah":          ["temptation", "love"],
+    "conflict":          ["warrior", "defeated", "faith-vs-power"],
+    "hajj":              ["zamzam", "safa-marwa"],
+    "hijrah":            ["hijra"],
+    "battle_badr":       ["badr"],
+    "incident_ifk":      ["slander", "vindication"],
+    "prophets_household":["mother-of-believers"],
+    "story_nuh":         ["flood"],
+    "story_hud":         ["aad"],
+    "story_salih":       ["thamud", "she-camel"],
+    "story_ibrahim":     ["khalilullah"],
+    "story_shuayb":      ["midian"],
+    "story_yusuf":       ["dream"],
+    "story_yunus":       ["whale", "nineveh"],
+    "story_isa":         ["messiah", "born-without-father", "disciples", "table"],
+    "story_muhammad":    ["seal-of-prophets", "final"],
+    "story_dhulqarnayn": ["yajuj-majuj", "barrier"],
+    "story_bani_israil": ["bani-israel", "sabbath", "golden-calf", "transformed"],
+}
+
+TAG_ALIASES = {old: new for new, olds in RETIRED_TAGS.items() for old in olds}
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  AYAH → THEMES MAP
-#  Format: (surah_int, ayah_int): ["theme_key", "theme_key", ...]
-#
-#  This is a curated seed covering ~450 key ayaat.
-#  Add your own as you study — this grows with you.
+#  Lives in ayah_tags/s001.py … s114.py — one file per surah.
 # ══════════════════════════════════════════════════════════════════════════════
 
-AYAH_TAGS = {
-    # ── Al-Fatihah (1) ────────────────────────────────────────────────────────
-    (1,1):  ["tawheed", "dhikr", "commands"],
-    (1,2):  ["tawheed", "shukr", "asma_ul_husna"],
-    (1,3):  ["asma_ul_husna", "hope_raja"],
-    (1,4):  ["akhirah", "tawheed"],
-    (1,5):  ["tawheed", "dhikr", "ikhlas"],
-    (1,6):  ["dhikr", "commands", "knowledge"],
-    (1,7):  ["history_lessons", "commands"],
-
-    # ── Al-Baqarah (2) ────────────────────────────────────────────────────────
-    (2,1):   ["revelation", "parables"],
-    (2,2):   ["revelation", "taqwa", "quran_recitation"],
-    (2,3):   ["salah", "zakat", "akhirah"],
-    (2,21):  ["tawheed", "commands"],
-    (2,22):  ["nature_signs", "tawheed"],
-    (2,30):  ["story_adam", "leadership", "tawheed"],
-    (2,31):  ["story_adam", "knowledge"],
-    (2,36):  ["story_adam", "trial_test"],
-    (2,37):  ["story_adam", "tawbah"],
-    (2,38):  ["story_adam", "glad_tidings"],
-    (2,45):  ["salah", "sabr", "commands"],
-    (2,83):  ["parents", "family", "commands", "social_justice"],
-    (2,110): ["salah", "zakat", "commands"],
-    (2,143): ["community", "commands", "social_justice"],
-    (2,152): ["dhikr", "shukr", "commands"],
-    (2,153): ["sabr", "salah", "commands", "anxiety_fear"],
-    (2,155): ["trial_test", "sabr"],
-    (2,156): ["sabr", "akhirah", "tawakkul"],
-    (2,157): ["sabr", "glad_tidings"],
-    (2,163): ["tawheed", "asma_ul_husna"],
-    (2,164): ["nature_signs", "tawheed"],
-    (2,177): ["taqwa", "family", "zakat", "sabr", "sidq"],
-    (2,183): ["sawm", "taqwa", "commands"],
-    (2,185): ["sawm", "revelation", "commands"],
-    (2,186): ["dhikr", "hope_raja", "tawbah"],
-    (2,195): ["commands", "zakat", "prohibitions"],
-    (2,197): ["hajj", "taqwa", "commands"],
-    (2,216): ["trial_test", "tawakkul", "akhirah"],
-    (2,219): ["wealth", "prohibitions", "zakat"],
-    (2,222): ["tawbah", "commands"],
-    (2,228): ["marriage", "commands"],
-    (2,229): ["marriage", "divorce", "commands"],
-    (2,233): ["parenting", "family", "commands"],
-    (2,255): ["tawheed", "asma_ul_husna"],          # Ayat al-Kursi
-    (2,256): ["tawheed", "commands"],               # La ikraha fid-deen
-    (2,261): ["zakat", "parables", "glad_tidings"],
-    (2,267): ["zakat", "commands", "work_ethics"],
-    (2,268): ["anxiety_fear", "wealth", "hope_raja"],
-    (2,269): ["knowledge", "asma_ul_husna"],
-    (2,275): ["trade", "prohibitions", "debt"],
-    (2,276): ["zakat", "wealth"],
-    (2,277): ["salah", "zakat", "glad_tidings"],
-    (2,282): ["debt", "trade", "commands", "sidq"],
-    (2,286): ["tawakkul", "trial_test", "dhikr"],   # La yukallifullahu nafsan
-
-    # ── Ali Imran (3) ─────────────────────────────────────────────────────────
-    (3,7):   ["revelation", "knowledge", "taqwa"],
-    (3,14):  ["wealth", "trial_test", "parables"],
-    (3,17):  ["sabr", "sidq", "dhikr", "taqwa"],
-    (3,26):  ["tawheed", "asma_ul_husna", "rizq"],
-    (3,27):  ["tawheed", "rizq", "asma_ul_husna"],
-    (3,31):  ["ikhlas", "tawbah", "commands"],
-    (3,45):  ["story_isa", "revelation"],
-    (3,92):  ["zakat", "taqwa", "commands"],
-    (3,102): ["taqwa", "commands"],
-    (3,103): ["community", "commands"],
-    (3,110): ["community", "commands", "social_justice"],
-    (3,130): ["trade", "prohibitions", "debt"],
-    (3,133): ["taqwa", "tawbah", "commands"],
-    (3,134): ["hilm", "zakat", "ihsan"],
-    (3,135): ["tawbah", "taqwa", "glad_tidings"],
-    (3,139): ["sabr", "tawakkul", "community"],
-    (3,159): ["hilm", "shura", "tawakkul", "leadership"],
-    (3,160): ["tawakkul", "tawheed"],
-    (3,169): ["akhirah", "glad_tidings"],
-    (3,173): ["tawakkul", "tawheed"],
-    (3,185): ["akhirah", "death_reminder", "trial_test"],
-    (3,190): ["nature_signs", "knowledge", "tawheed"],
-    (3,191): ["dhikr", "nature_signs", "tawheed"],
-    (3,200): ["sabr", "taqwa", "commands"],
-
-    # ── An-Nisa (4) ───────────────────────────────────────────────────────────
-    (4,1):   ["family", "tawheed", "commands"],
-    (4,3):   ["marriage", "commands", "adl"],
-    (4,11):  ["inheritance", "commands"],
-    (4,19):  ["marriage", "commands", "adl"],
-    (4,29):  ["trade", "prohibitions", "commands"],
-    (4,36):  ["tawheed", "parents", "family", "commands"],
-    (4,58):  ["leadership", "adl", "commands"],
-    (4,59):  ["leadership", "commands", "shura"],
-    (4,103): ["salah", "commands"],
-    (4,135): ["adl", "sidq", "commands"],
-
-    # ── Al-Maidah (5) ─────────────────────────────────────────────────────────
-    (5,2):   ["commands", "community", "taqwa"],
-    (5,3):   ["food_halal", "revelation", "tawheed"],
-    (5,8):   ["adl", "commands", "taqwa"],
-    (5,32):  ["social_justice", "commands", "adl"],
-    (5,35):  ["taqwa", "commands"],
-    (5,48):  ["revelation", "commands", "community"],
-    (5,90):  ["prohibitions", "commands"],
-    (5,120): ["tawheed", "asma_ul_husna"],
-
-    # ── Al-Anam (6) ───────────────────────────────────────────────────────────
-    (6,54):  ["tawbah", "hope_raja", "asma_ul_husna"],
-    (6,59):  ["tawheed", "qadr", "asma_ul_husna"],
-    (6,95):  ["nature_signs", "tawheed"],
-    (6,103): ["tawheed", "asma_ul_husna"],
-    (6,151): ["commands", "prohibitions", "parents"],
-    (6,160): ["akhirah", "glad_tidings"],
-    (6,162): ["ikhlas", "tawheed", "commands"],
-
-    # ── Al-Araf (7) ───────────────────────────────────────────────────────────
-    (7,19):  ["story_adam", "commands"],
-    (7,23):  ["story_adam", "tawbah", "dhikr"],
-    (7,31):  ["food_halal", "commands", "health"],
-    (7,54):  ["tawheed", "nature_signs"],
-    (7,96):  ["taqwa", "rizq", "glad_tidings"],
-    (7,156): ["tawbah", "asma_ul_husna", "hope_raja"],
-    (7,157): ["story_muhammad", "revelation"],
-    (7,180): ["asma_ul_husna", "dhikr", "commands"],
-    (7,204): ["quran_recitation", "commands"],
-
-    # ── Al-Anfal (8) ──────────────────────────────────────────────────────────
-    (8,2):   ["taqwa", "salah", "tawakkul"],
-    (8,24):  ["commands", "tawakkul", "community"],
-    (8,45):  ["sabr", "commands"],
-    (8,46):  ["sabr", "community", "commands"],
-
-    # ── At-Tawbah (9) ─────────────────────────────────────────────────────────
-    (9,18):  ["salah", "zakat", "taqwa", "tawheed"],
-    (9,51):  ["qadr", "tawakkul", "tawheed"],
-    (9,71):  ["community", "salah", "zakat", "commands"],
-    (9,103): ["zakat", "salah", "tawbah"],
-    (9,119): ["taqwa", "sidq", "commands"],
-    (9,128): ["story_muhammad", "asma_ul_husna"],
-
-    # ── Yunus (10) ────────────────────────────────────────────────────────────
-    (10,57): ["revelation", "quran_recitation", "health"],
-    (10,62): ["taqwa", "glad_tidings", "tawakkul"],
-    (10,107): ["tawakkul", "tawheed", "asma_ul_husna"],
-
-    # ── Hud (11) ──────────────────────────────────────────────────────────────
-    (11,6):  ["rizq", "tawheed", "tawakkul"],
-    (11,88): ["tawakkul", "tawheed"],
-    (11,114): ["salah", "commands", "tawbah"],
-    (11,115): ["sabr", "commands"],
-
-    # ── Yusuf (12) ────────────────────────────────────────────────────────────
-    (12,4):  ["story_yusuf"],
-    (12,18): ["story_yusuf", "sabr"],
-    (12,20): ["story_yusuf", "wealth"],
-    (12,64): ["story_yusuf", "tawakkul", "tawheed"],
-    (12,86): ["story_yusuf", "sabr", "grief_loss"],
-    (12,87): ["story_yusuf", "hope_raja", "tawakkul"],
-    (12,101): ["story_yusuf", "dhikr", "tawbah"],
-
-    # ── Ar-Rad (13) ───────────────────────────────────────────────────────────
-    (13,11): ["qadr", "community", "tawakkul"],
-    (13,28): ["dhikr", "anxiety_fear", "glad_tidings"],  # Ala bi dhikrillah
-    (13,29): ["taqwa", "glad_tidings"],
-
-    # ── Ibrahim (14) ──────────────────────────────────────────────────────────
-    (14,7):  ["shukr", "glad_tidings"],                  # La in shakartum
-    (14,24): ["parables", "tawheed", "knowledge"],
-    (14,31): ["salah", "zakat", "commands"],
-    (14,34): ["asma_ul_husna", "shukr", "nature_signs"],
-    (14,40): ["salah", "dhikr", "family"],
-    (14,41): ["dhikr", "family", "akhirah"],
-
-    # ── Al-Hijr (15) ──────────────────────────────────────────────────────────
-    (15,9):  ["revelation", "tawheed"],
-    (15,98): ["salah", "commands", "dhikr"],
-
-    # ── An-Nahl (16) ──────────────────────────────────────────────────────────
-    (16,18): ["shukr", "asma_ul_husna", "nature_signs"],
-    (16,53): ["shukr", "tawheed"],
-    (16,78): ["knowledge", "shukr"],
-    (16,90): ["adl", "ihsan", "commands", "prohibitions"],
-    (16,97): ["work_ethics", "glad_tidings"],
-    (16,114): ["food_halal", "shukr", "commands"],
-    (16,125): ["knowledge", "commands"],
-
-    # ── Al-Isra (17) ──────────────────────────────────────────────────────────
-    (17,1):  ["story_muhammad", "tawheed"],
-    (17,9):  ["revelation", "quran_recitation", "glad_tidings"],
-    (17,23): ["parents", "commands"],                    # Qada rabbuka
-    (17,24): ["parents", "dhikr"],
-    (17,25): ["parents", "asma_ul_husna"],
-    (17,26): ["family", "zakat", "prohibitions"],
-    (17,27): ["prohibitions", "wealth"],
-    (17,29): ["wealth", "commands"],
-    (17,31): ["parenting", "rizq", "prohibitions"],
-    (17,32): ["prohibitions"],
-    (17,33): ["prohibitions", "adl"],
-    (17,36): ["knowledge", "commands"],
-    (17,37): ["kibr", "prohibitions"],
-    (17,44): ["tawheed", "nature_signs"],
-    (17,78): ["salah", "commands"],
-    (17,80): ["dhikr", "commands"],
-    (17,82): ["revelation", "health"],
-    (17,110): ["asma_ul_husna", "dhikr"],
-
-    # ── Al-Kahf (18) ──────────────────────────────────────────────────────────
-    (18,10): ["tawbah", "tawakkul", "hope_raja"],
-    (18,13): ["taqwa", "tawakkul"],
-    (18,28): ["dhikr", "commands", "taqwa"],
-    (18,29): ["tawheed", "commands"],
-    (18,45): ["parables", "wealth", "akhirah"],
-    (18,46): ["wealth", "akhirah", "parables"],
-    (18,54): ["parables", "revelation"],
-    (18,65): ["knowledge", "story_musa"],
-    (18,66): ["knowledge", "story_musa"],
-    (18,109): ["tawheed", "knowledge", "asma_ul_husna"],
-    (18,110): ["ikhlas", "tawheed", "commands"],
-
-    # ── Maryam (19) ───────────────────────────────────────────────────────────
-    (19,2):  ["dhikr", "story_isa"],
-    (19,30): ["story_isa", "revelation"],
-    (19,36): ["story_isa", "tawheed"],
-    (19,76): ["sabr", "glad_tidings"],
-    (19,96): ["ikhlas", "glad_tidings"],
-
-    # ── Ta-Ha (20) ────────────────────────────────────────────────────────────
-    (20,14): ["salah", "dhikr", "tawheed", "commands"],
-    (20,25): ["dhikr", "story_musa"],
-    (20,114): ["knowledge", "dhikr"],
-    (20,124): ["akhirah", "warnings", "dhikr"],
-    (20,130): ["salah", "sabr", "commands"],
-    (20,132): ["salah", "family", "commands"],
-
-    # ── Al-Anbiya (21) ────────────────────────────────────────────────────────
-    (21,35): ["trial_test", "akhirah"],
-    (21,69): ["story_ibrahim"],
-    (21,83): ["story_ayyub", "dhikr"],
-    (21,84): ["story_ayyub", "glad_tidings"],
-    (21,87): ["story_yunus", "dhikr", "tawbah"],        # Dua of Yunus
-    (21,88): ["story_yunus", "glad_tidings", "tawbah"],
-    (21,107): ["story_muhammad", "asma_ul_husna"],
-
-    # ── Al-Hajj (22) ──────────────────────────────────────────────────────────
-    (22,27): ["hajj", "commands"],
-    (22,37): ["ikhlas", "taqwa", "commands"],
-    (22,41): ["leadership", "salah", "zakat", "commands"],
-    (22,46): ["knowledge", "akhirah"],
-    (22,77): ["salah", "commands", "taqwa"],
-    (22,78): ["tawakkul", "commands"],
-
-    # ── Al-Muminun (23) ───────────────────────────────────────────────────────
-    (23,1):  ["taqwa", "salah", "glad_tidings"],
-    (23,2):  ["salah", "taqwa"],
-    (23,3):  ["sidq", "taqwa"],
-    (23,4):  ["zakat", "taqwa"],
-    (23,8):  ["sidq", "amanah"],
-    (23,9):  ["salah", "taqwa"],
-    (23,10): ["glad_tidings", "akhirah"],
-
-    # ── An-Nur (24) ───────────────────────────────────────────────────────────
-    (24,2):  ["commands", "prohibitions"],
-    (24,31): ["commands"],
-    (24,35): ["tawheed", "asma_ul_husna", "parables"],  # Ayat an-Nur
-    (24,56): ["salah", "zakat", "commands"],
-    (24,58): ["family", "commands"],
-    (24,61): ["family", "commands"],
-
-    # ── Al-Furqan (25) ────────────────────────────────────────────────────────
-    (25,63): ["taqwa", "hilm"],
-    (25,64): ["salah", "dhikr"],
-    (25,65): ["tawbah", "akhirah"],
-    (25,67): ["wealth", "commands"],
-    (25,68): ["prohibitions", "tawbah"],
-    (25,70): ["tawbah", "glad_tidings"],
-    (25,74): ["family", "dhikr"],
-
-    # ── Luqman (31) ───────────────────────────────────────────────────────────
-    (31,12): ["shukr", "knowledge"],
-    (31,13): ["tawheed", "commands", "parents"],
-    (31,14): ["parents", "shukr", "commands"],
-    (31,15): ["parents", "commands"],
-    (31,16): ["akhirah", "qadr"],
-    (31,17): ["salah", "commands", "community"],
-    (31,18): ["kibr", "prohibitions"],
-    (31,19): ["commands"],
-
-    # ── As-Sajdah (32) ────────────────────────────────────────────────────────
-    (32,15): ["taqwa", "salah"],
-    (32,16): ["salah", "dhikr"],
-    (32,17): ["akhirah", "glad_tidings", "sabr"],
-
-    # ── Al-Ahzab (33) ─────────────────────────────────────────────────────────
-    (33,21): ["story_muhammad", "commands"],             # Uswatun hasana
-    (33,35): ["taqwa", "commands", "salah"],
-    (33,41): ["dhikr", "commands"],
-    (33,56): ["story_muhammad", "salah"],
-    (33,70): ["sidq", "taqwa", "commands"],
-
-    # ── Ya-Sin (36) ───────────────────────────────────────────────────────────
-    (36,12): ["akhirah", "qadr"],
-    (36,82): ["tawheed", "asma_ul_husna"],
-
-    # ── Az-Zumar (39) ─────────────────────────────────────────────────────────
-    (39,9):  ["knowledge", "taqwa"],
-    (39,10): ["sabr", "taqwa", "glad_tidings"],
-    (39,22): ["taqwa", "glad_tidings"],
-    (39,36): ["tawakkul", "tawheed"],
-    (39,38): ["tawakkul", "tawheed"],
-    (39,53): ["tawbah", "hope_raja", "asma_ul_husna"],   # La taqnatu
-    (39,54): ["tawbah", "commands"],
-
-    # ── Ghafir (40) ───────────────────────────────────────────────────────────
-    (40,44): ["tawakkul", "tawheed"],
-    (40,60): ["dhikr", "glad_tidings", "commands"],      # Uduni astajib lakum
-
-    # ── Fussilat (41) ─────────────────────────────────────────────────────────
-    (41,30): ["taqwa", "tawakkul", "glad_tidings"],
-    (41,34): ["hilm", "commands"],
-    (41,46): ["akhirah", "adl"],
-
-    # ── Ash-Shura (42) ────────────────────────────────────────────────────────
-    (42,10): ["tawheed", "akhirah"],
-    (42,23): ["glad_tidings", "shukr"],
-    (42,25): ["tawbah", "asma_ul_husna"],
-    (42,27): ["rizq", "tawheed"],
-    (42,38): ["salah", "shura", "zakat"],
-    (42,43): ["sabr", "hilm"],
-
-    # ── Al-Hujurat (49) ───────────────────────────────────────────────────────
-    (49,6):  ["sidq", "knowledge", "commands"],
-    (49,10): ["community", "commands"],
-    (49,11): ["prohibitions", "community"],
-    (49,12): ["hasad", "prohibitions"],
-    (49,13): ["community", "taqwa", "adl"],
-
-    # ── Adh-Dhariyat (51) ─────────────────────────────────────────────────────
-    (51,19): ["zakat", "social_justice"],
-    (51,56): ["tawheed", "gratitude_life"],
-
-    # ── Al-Waqi'ah (56) ───────────────────────────────────────────────────────
-    (56,10): ["akhirah", "glad_tidings"],
-    (56,77): ["revelation", "quran_recitation"],
-    (56,79): ["quran_recitation", "taqwa"],
-
-    # ── Al-Hadid (57) ─────────────────────────────────────────────────────────
-    (57,7):  ["zakat", "tawakkul", "commands"],
-    (57,20): ["parables", "wealth", "akhirah"],
-    (57,21): ["glad_tidings", "akhirah"],
-    (57,22): ["qadr", "tawakkul"],
-    (57,23): ["tawakkul", "shukr"],
-
-    # ── Al-Hashr (59) ─────────────────────────────────────────────────────────
-    (59,7):  ["social_justice", "zakat", "commands"],
-    (59,9):  ["community", "social_justice", "ihsan"],
-    (59,18): ["akhirah", "taqwa", "commands"],
-    (59,19): ["taqwa", "warnings"],
-    (59,22): ["tawheed", "asma_ul_husna"],
-    (59,23): ["tawheed", "asma_ul_husna"],
-    (59,24): ["tawheed", "asma_ul_husna"],
-
-    # ── Al-Jumu'ah (62) ───────────────────────────────────────────────────────
-    (62,9):  ["salah", "trade", "commands"],
-    (62,10): ["work_ethics", "commands"],
-
-    # ── At-Talaq (65) ─────────────────────────────────────────────────────────
-    (65,2):  ["taqwa", "rizq", "glad_tidings"],
-    (65,3):  ["tawakkul", "rizq", "tawheed"],
-
-    # ── Al-Mulk (67) ──────────────────────────────────────────────────────────
-    (67,2):  ["trial_test", "death_reminder", "akhirah"],
-    (67,14): ["tawheed", "knowledge"],
-    (67,15): ["rizq", "nature_signs", "tawakkul"],
-
-    # ── Al-Qalam (68) ─────────────────────────────────────────────────────────
-    (68,4):  ["story_muhammad", "ihsan"],
-
-    # ── Al-Insan (76) ─────────────────────────────────────────────────────────
-    (76,8):  ["social_justice", "ihsan", "orphans"],
-    (76,9):  ["ikhlas", "social_justice"],
-
-    # ── An-Naba (78) ──────────────────────────────────────────────────────────
-    (78,8):  ["marriage", "nature_signs"],
-    (78,40): ["akhirah", "death_reminder", "warnings"],
-
-    # ── An-Nazi'at (79) ───────────────────────────────────────────────────────
-    (79,40): ["taqwa", "akhirah"],
-    (79,41): ["akhirah", "glad_tidings"],
-
-    # ── 'Abasa (80) ───────────────────────────────────────────────────────────
-    (80,1):  ["story_muhammad", "adl"],
-    (80,24): ["shukr", "nature_signs"],
-
-    # ── Al-A'la (87) ──────────────────────────────────────────────────────────
-    (87,9):  ["quran_recitation", "commands"],
-    (87,14): ["taqwa", "glad_tidings"],
-
-    # ── Al-Ghashiyah (88) ────────────────────────────────────────────────────
-    (88,17): ["nature_signs", "tawheed"],
-    (88,21): ["commands", "revelation"],
-
-    # ── Al-Fajr (89) ──────────────────────────────────────────────────────────
-    (89,27): ["taqwa", "glad_tidings"],
-    (89,28): ["glad_tidings", "akhirah"],
-
-    # ── Ad-Duhaa (93) ─────────────────────────────────────────────────────────
-    (93,3):  ["hope_raja", "tawheed"],
-    (93,4):  ["glad_tidings", "akhirah"],
-    (93,5):  ["hope_raja", "tawheed"],
-    (93,9):  ["orphans", "commands"],
-    (93,11): ["shukr", "commands"],
-
-    # ── Ash-Sharh (94) ────────────────────────────────────────────────────────
-    (94,1):  ["anxiety_fear", "hope_raja", "asma_ul_husna"],
-    (94,5):  ["glad_tidings", "sabr", "hope_raja"],     # Fa inna ma al-usri yusra
-    (94,6):  ["glad_tidings", "sabr"],
-    (94,7):  ["work_ethics", "commands"],
-    (94,8):  ["dhikr", "commands"],
-
-    # ── At-Tin (95) ───────────────────────────────────────────────────────────
-    (95,4):  ["nature_signs", "tawheed", "gratitude_life"],
-    (95,5):  ["akhirah", "warnings"],
-    (95,6):  ["taqwa", "glad_tidings"],
-
-    # ── Al-'Alaq (96) ─────────────────────────────────────────────────────────
-    (96,1):  ["knowledge", "commands", "revelation"],
-    (96,2):  ["knowledge", "nature_signs"],
-    (96,3):  ["knowledge", "commands"],
-    (96,4):  ["knowledge", "commands"],
-    (96,5):  ["knowledge"],
-
-    # ── Al-Qadr (97) ──────────────────────────────────────────────────────────
-    (97,1):  ["revelation", "time"],
-    (97,3):  ["akhirah", "glad_tidings"],
-
-    # ── Az-Zalzalah (99) ──────────────────────────────────────────────────────
-    (99,7):  ["akhirah", "adl"],
-    (99,8):  ["akhirah", "adl"],
-
-    # ── Al-'Asr (103) ─────────────────────────────────────────────────────────
-    (103,1): ["time", "oaths"],
-    (103,2): ["akhirah", "warnings"],
-    (103,3): ["taqwa", "sabr", "community"],
-
-    # ── Al-Kawthar (108) ──────────────────────────────────────────────────────
-    (108,1): ["story_muhammad", "glad_tidings", "shukr"],
-    (108,2): ["salah", "commands"],
-
-    # ── Al-Kafirun (109) ──────────────────────────────────────────────────────
-    (109,1): ["tawheed", "ikhlas"],
-    (109,6): ["tawheed", "ikhlas"],
-
-    # ── An-Nasr (110) ─────────────────────────────────────────────────────────
-    (110,1): ["story_muhammad", "tawheed"],
-    (110,3): ["tawbah", "commands"],
-
-    # ── Al-Ikhlas (112) ───────────────────────────────────────────────────────
-    (112,1): ["tawheed", "ikhlas"],
-    (112,2): ["tawheed", "asma_ul_husna"],
-    (112,3): ["tawheed", "asma_ul_husna"],
-    (112,4): ["tawheed", "asma_ul_husna"],
-
-    # ── Al-Falaq (113) ────────────────────────────────────────────────────────
-    (113,1): ["dhikr", "commands"],
-    (113,2): ["dhikr", "tawheed"],
-
-    # ── An-Nas (114) ──────────────────────────────────────────────────────────
-    (114,1): ["dhikr", "commands"],
-    (114,2): ["tawheed", "asma_ul_husna"],
-    (114,3): ["tawheed", "asma_ul_husna"],
-}
+AYAH_TAGS, SURAH_STATUS = _load_ayah_tags()
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  RELATED TOPICS MAP
-#  Defines conceptual bridges between themes for cross-navigation.
-#  "If you are reading about X, also see Y because..."
+#  Conceptual bridges between themes for cross-navigation.
+#  "If you are reading about X, also see Y."
 # ══════════════════════════════════════════════════════════════════════════════
 
 RELATED_TOPICS = {
-    "tawheed":         ["asma_ul_husna", "ikhlas", "tawakkul", "revelation"],
-    "asma_ul_husna":   ["tawheed", "dhikr", "hope_raja"],
-    "akhirah":         ["death_reminder", "jannah", "jahannam", "trial_test", "akhirah"],
-    "jannah":          ["taqwa", "sabr", "glad_tidings", "akhirah"],
-    "jahannam":        ["taqwa", "warnings", "akhirah"],
-    "qadr":            ["tawakkul", "sabr", "anxiety_fear"],
-    "sabr":            ["tawakkul", "trial_test", "hope_raja", "grief_loss"],
-    "shukr":           ["rizq", "taqwa", "asma_ul_husna"],
-    "tawakkul":        ["rizq", "qadr", "tawheed", "sabr"],
-    "ikhlas":          ["tawheed", "taqwa", "salah"],
-    "taqwa":           ["akhirah", "salah", "commands"],
-    "anxiety_fear":    ["sabr", "tawakkul", "dhikr", "hope_raja"],
-    "grief_loss":      ["sabr", "tawbah", "hope_raja", "qadr"],
-    "trial_test":      ["sabr", "tawakkul", "qadr", "shukr"],
-    "rizq":            ["tawakkul", "zakat", "trade", "shukr"],
-    "wealth":          ["zakat", "trade", "rizq", "prohibitions"],
-    "trade":           ["debt", "adl", "commands"],
-    "family":          ["parents", "marriage", "parenting", "orphans"],
-    "marriage":        ["family", "parenting", "commands"],
-    "parents":         ["family", "commands", "shukr"],
-    "parenting":       ["family", "parents", "commands"],
-    "knowledge":       ["revelation", "taqwa", "work_ethics"],
-    "salah":           ["dhikr", "taqwa", "commands"],
-    "zakat":           ["social_justice", "wealth", "commands"],
-    "tawbah":          ["hope_raja", "ikhlas", "asma_ul_husna"],
-    "community":       ["leadership", "shura", "social_justice"],
-    "leadership":      ["adl", "shura", "community"],
-    "social_justice":  ["adl", "zakat", "orphans", "oppression"],
-    "death_reminder":  ["akhirah", "taqwa", "dhikr"],
-    "nature_signs":    ["tawheed", "knowledge", "shukr"],
-    "history_lessons": ["warnings", "taqwa", "prophethood"],
-    "story_yusuf":     ["sabr", "tawakkul", "trial_test", "grief_loss"],
-    "story_musa":      ["leadership", "trial_test", "history_lessons"],
-    "story_ibrahim":   ["tawheed", "trial_test", "tawakkul"],
-    "story_ayyub":     ["sabr", "grief_loss", "dhikr"],
-    "story_yunus":     ["tawbah", "grief_loss", "hope_raja"],
-    "story_muhammad":  ["prophethood", "community", "revelation"],
-    "parables":        ["knowledge", "akhirah", "nature_signs"],
+    # Belief
+    "tawheed":            ["asma_ul_husna", "shirk", "ikhlas", "purpose_of_life"],
+    "asma_ul_husna":      ["tawheed", "rahmah", "dhikr", "dua"],
+    "rahmah":             ["tawbah", "hope_raja", "asma_ul_husna", "love_of_allah"],
+    "iman":               ["taqwa", "hidayah", "kufr", "trial_test"],
+    "shirk":              ["tawheed", "kufr", "story_ibrahim", "history_lessons"],
+    "kufr":               ["iman", "shirk", "nifaq", "jahannam"],
+    "nifaq":              ["kufr", "ikhlas", "wala_bara", "battle_uhud"],
+    "hidayah":            ["iman", "qadr", "revelation", "dua"],
+    "qadr":               ["tawakkul", "trial_test", "hidayah", "sabr"],
+    "prophethood":        ["revelation", "story_muhammad", "dawah", "miracles"],
+    "revelation":         ["quran_recitation", "prophethood", "angels", "knowledge"],
+    "angels":             ["revelation", "jinn", "akhirah", "shaytan"],
+    "jinn":               ["shaytan", "angels", "story_sulayman", "purpose_of_life"],
+    "shaytan":            ["story_adam", "jinn", "tazkiyah", "kibr"],
+    # Hereafter
+    "death_reminder":     ["akhirah", "time", "dunya", "taqwa"],
+    "resurrection":       ["akhirah", "human_creation", "nature_signs", "kufr"],
+    "akhirah":            ["resurrection", "jannah", "jahannam", "adl"],
+    "jannah":             ["glad_tidings", "iman", "sabr", "akhirah"],
+    "jahannam":           ["warnings", "kufr", "akhirah", "taqwa"],
+    # Prophets
+    "story_adam":         ["shaytan", "human_creation", "tawbah", "angels"],
+    "story_idris":        ["prophethood", "sidq", "sabr"],
+    "story_nuh":          ["dawah", "sabr", "history_lessons", "story_hud"],
+    "story_hud":          ["history_lessons", "kibr", "story_nuh", "story_salih"],
+    "story_salih":        ["history_lessons", "miracles", "story_hud", "story_shuayb"],
+    "story_ibrahim":      ["tawheed", "story_ismail", "kaaba", "trial_test"],
+    "story_lut":          ["haya", "history_lessons", "story_ibrahim", "warnings"],
+    "story_ismail":       ["story_ibrahim", "kaaba", "hajj", "amanah"],
+    "story_ishaq":        ["story_ibrahim", "story_yaqub", "glad_tidings"],
+    "story_yaqub":        ["story_yusuf", "sabr", "grief_loss", "family"],
+    "story_yusuf":        ["sabr", "story_yaqub", "haya", "hilm"],
+    "story_ayyub":        ["sabr", "health", "dua", "trial_test"],
+    "story_shuayb":       ["trade", "history_lessons", "story_musa", "adl"],
+    "story_musa":         ["story_harun", "story_bani_israil", "oppression", "miracles"],
+    "story_harun":        ["story_musa", "story_bani_israil", "leadership", "family"],
+    "story_dhulkifl":     ["sabr", "prophethood", "story_ayyub"],
+    "story_dawud":        ["story_sulayman", "tawbah", "adl", "story_bani_israil"],
+    "story_sulayman":     ["story_dawud", "shukr", "jinn", "leadership"],
+    "story_ilyas":        ["shirk", "dawah", "prophethood"],
+    "story_alyasa":       ["prophethood", "story_ilyas"],
+    "story_yunus":        ["dua", "tawbah", "sabr", "anxiety_fear"],
+    "story_zakariya":     ["dua", "story_yahya", "story_maryam", "hope_raja"],
+    "story_yahya":        ["story_zakariya", "parents", "haya", "story_isa"],
+    "story_isa":          ["story_maryam", "miracles", "ahl_al_kitab", "tawheed"],
+    "story_muhammad":     ["prophethood", "sahabah", "prophets_household", "revelation"],
+    # Narratives
+    "story_maryam":       ["story_isa", "women", "story_zakariya", "haya"],
+    "story_luqman":       ["parenting", "knowledge", "shirk", "adab"],
+    "story_dhulqarnayn":  ["leadership", "adl", "akhirah", "story_ashab_al_kahf"],
+    "story_ashab_al_kahf":["iman", "resurrection", "tawakkul", "story_dhulqarnayn"],
+    "story_bani_israil":  ["story_musa", "ahl_al_kitab", "amanah", "shukr"],
+    # Seerah
+    "sahabah":            ["story_muhammad", "hijrah", "community", "battle_badr"],
+    "prophets_household": ["story_muhammad", "marriage", "women", "incident_ifk"],
+    "hijrah":             ["sahabah", "story_muhammad", "community", "tawakkul"],
+    "isra_miraj":         ["story_muhammad", "kaaba", "miracles", "salah"],
+    "battle_badr":        ["conflict", "tawakkul", "sahabah", "angels"],
+    "battle_uhud":        ["conflict", "sabr", "nifaq", "battle_badr"],
+    "battle_ahzab":       ["conflict", "nifaq", "trial_test", "battle_uhud"],
+    "treaty_hudaybiyah":  ["conflict", "sahabah", "amanah", "kaaba"],
+    "battle_hunayn":      ["conflict", "tawakkul", "kibr"],
+    "expedition_tabuk":   ["conflict", "nifaq", "tawbah", "sabr"],
+    "incident_ifk":       ["speech_ethics", "prophets_household", "haya", "sabr"],
+    # Worship
+    "salah":              ["taharah", "dhikr", "kaaba", "sajdah_tilawah"],
+    "taharah":            ["salah", "haya", "health"],
+    "zakat":              ["wealth", "social_justice", "ikhlas", "orphans"],
+    "sawm":               ["taqwa", "revelation", "dua"],
+    "hajj":               ["kaaba", "story_ibrahim", "taqwa", "dhikr"],
+    "kaaba":              ["hajj", "story_ibrahim", "salah", "isra_miraj"],
+    "dhikr":              ["dua", "salah", "anxiety_fear", "quran_recitation"],
+    "dua":                ["dhikr", "hope_raja", "tawbah", "asma_ul_husna"],
+    "tawbah":             ["rahmah", "hope_raja", "tazkiyah", "dua"],
+    "quran_recitation":   ["revelation", "knowledge", "hidayah", "dhikr"],
+    # Character
+    "sabr":               ["trial_test", "tawakkul", "grief_loss", "jannah"],
+    "shukr":              ["rizq", "sabr", "dunya", "trial_test"],
+    "tawakkul":           ["qadr", "rizq", "sabr", "anxiety_fear"],
+    "ikhlas":             ["tawheed", "taqwa", "nifaq", "zakat"],
+    "taqwa":              ["iman", "akhirah", "tazkiyah", "ihsan"],
+    "ihsan":              ["taqwa", "love_of_allah", "hilm", "zakat"],
+    "sidq":               ["amanah", "speech_ethics", "iman", "nifaq"],
+    "amanah":             ["sidq", "trade", "debt", "leadership"],
+    "adl":                ["oppression", "criminal_law", "leadership", "social_justice"],
+    "hilm":               ["ihsan", "speech_ethics", "community", "rahmah"],
+    "kibr":               ["shaytan", "story_hud", "dunya", "adab"],
+    "hasad":              ["story_yusuf", "story_adam", "tazkiyah", "community"],
+    "haya":               ["marriage", "women", "adab", "tazkiyah"],
+    "speech_ethics":      ["adab", "sidq", "incident_ifk", "community"],
+    "adab":               ["speech_ethics", "haya", "family", "community"],
+    # Spirit
+    "tazkiyah":           ["taqwa", "shaytan", "dunya", "tawbah"],
+    "dunya":              ["akhirah", "wealth", "trial_test", "death_reminder"],
+    "purpose_of_life":    ["tawheed", "trial_test", "akhirah", "dunya"],
+    "love_of_allah":      ["ihsan", "taqwa", "rahmah", "story_muhammad"],
+    "hope_raja":          ["rahmah", "tawbah", "grief_loss", "anxiety_fear"],
+    "anxiety_fear":       ["tawakkul", "dhikr", "hope_raja", "sabr"],
+    "grief_loss":         ["sabr", "hope_raja", "death_reminder", "story_yaqub"],
+    "trial_test":         ["sabr", "qadr", "dunya", "shukr"],
+    # Life
+    "rizq":               ["tawakkul", "shukr", "work_ethics", "wealth"],
+    "wealth":             ["zakat", "dunya", "riba", "trade"],
+    "trade":              ["amanah", "debt", "riba", "story_shuayb"],
+    "debt":               ["trade", "riba", "amanah"],
+    "riba":               ["trade", "debt", "wealth", "social_justice"],
+    "time":               ["death_reminder", "dunya", "akhirah"],
+    "knowledge":          ["revelation", "quran_recitation", "nature_signs", "story_luqman"],
+    "health":             ["taharah", "food_halal", "story_ayyub"],
+    "food_halal":         ["health", "commands", "prohibitions"],
+    "work_ethics":        ["rizq", "trade", "time"],
+    # Relations
+    "marriage":           ["family", "divorce", "women", "haya"],
+    "family":             ["parents", "parenting", "marriage", "inheritance"],
+    "parents":            ["family", "parenting", "story_luqman", "ihsan"],
+    "parenting":          ["parents", "family", "story_luqman", "orphans"],
+    "women":              ["marriage", "story_maryam", "prophets_household", "haya"],
+    "divorce":            ["marriage", "women", "family"],
+    "inheritance":        ["family", "orphans", "adl"],
+    "orphans":            ["social_justice", "zakat", "inheritance"],
+    # Society
+    "community":          ["sahabah", "wala_bara", "adl", "speech_ethics"],
+    "wala_bara":          ["community", "nifaq", "ahl_al_kitab", "iman"],
+    "ahl_al_kitab":       ["story_bani_israil", "story_isa", "revelation", "wala_bara"],
+    "dawah":              ["prophethood", "knowledge", "hilm", "community"],
+    "leadership":         ["shura", "adl", "amanah", "story_sulayman"],
+    "shura":              ["leadership", "community"],
+    "criminal_law":       ["adl", "commands", "prohibitions"],
+    "oppression":         ["adl", "story_musa", "sabr", "history_lessons"],
+    "conflict":           ["oppression", "battle_badr", "sabr", "hijrah"],
+    "social_justice":     ["zakat", "orphans", "adl", "riba"],
+    "environment":        ["nature_signs", "animals", "oppression"],
+    # Signs
+    "nature_signs":       ["tawheed", "knowledge", "shukr", "human_creation"],
+    "human_creation":     ["nature_signs", "resurrection", "story_adam", "purpose_of_life"],
+    "animals":            ["nature_signs", "food_halal", "story_sulayman"],
+    "miracles":           ["prophethood", "story_musa", "story_isa", "nature_signs"],
+    "history_lessons":    ["warnings", "story_nuh", "story_hud", "kibr"],
+    # Meta
+    "muqattaat":          ["revelation", "quran_recitation"],
+    "sajdah_tilawah":     ["salah", "quran_recitation", "dhikr"],
+    "o_believers":        ["commands", "iman", "prohibitions"],
+    "o_mankind":          ["tawheed", "purpose_of_life", "dawah"],
+    "they_ask_you":       ["story_muhammad", "knowledge", "commands"],
+    "commands":           ["prohibitions", "o_believers", "taqwa"],
+    "prohibitions":       ["commands", "food_halal", "criminal_law"],
+    "glad_tidings":       ["jannah", "hope_raja", "iman"],
+    "warnings":           ["jahannam", "history_lessons", "kufr"],
+    "parables":           ["knowledge", "dunya", "nature_signs"],
+    "oaths":              ["nature_signs", "akhirah", "time"],
 }
 
 # ══════════════════════════════════════════════════════════════════════════════

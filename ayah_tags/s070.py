@@ -1,0 +1,53 @@
+"""70 · Al-Ma'arij · The Ascending Stairways · المعارج — 44 ayaat (meccan)"""
+
+STATUS = "deep"
+
+TAGS = {
+    # 1–18 · A Day of fifty thousand years; the Flame that calls
+    1: ["akhirah", "kufr", "dua"],
+    2: ["akhirah", "kufr"],
+    3: ["akhirah", "asma_ul_husna", "angels"],
+    4: ["angels", "akhirah", "time"],
+    5: ["sabr", "story_muhammad", "commands"],
+    6: ["akhirah", "kufr"],
+    7: ["akhirah"],
+    8: ["akhirah", "nature_signs"],
+    9: ["akhirah", "nature_signs"],
+    10: ["akhirah", "family"],
+    11: ["akhirah", "jahannam", "parenting"],
+    12: ["akhirah", "family"],
+    13: ["akhirah", "family"],
+    14: ["akhirah", "jahannam"],
+    15: ["jahannam"],
+    16: ["jahannam"],
+    17: ["jahannam", "kufr"],
+    18: ["jahannam", "wealth", "kibr"],
+    # 19–35 · Man created anxious — except those constant in prayer
+    19: ["human_creation", "anxiety_fear"],
+    20: ["human_creation", "sabr", "anxiety_fear"],
+    21: ["human_creation", "wealth", "zakat"],
+    22: ["salah", "iman"],
+    23: ["salah", "sabr"],
+    24: ["zakat", "wealth", "social_justice"],
+    25: ["zakat", "social_justice"],
+    26: ["akhirah", "iman"],
+    27: ["taqwa", "akhirah"],
+    28: ["taqwa", "akhirah"],
+    29: ["haya", "iman"],
+    30: ["haya", "marriage"],
+    31: ["haya", "prohibitions"],
+    32: ["amanah", "sidq"],
+    33: ["sidq", "adl"],
+    34: ["salah", "iman"],
+    35: ["jannah", "glad_tidings"],
+    # 36–44 · Do they each aspire to a garden? The Day they emerge from the graves
+    36: ["kufr", "adab"],
+    37: ["kufr"],
+    38: ["jannah", "kufr", "kibr"],
+    39: ["human_creation", "kibr", "resurrection"],
+    40: ["oaths", "nature_signs", "qadr"],
+    41: ["qadr", "resurrection"],
+    42: ["dunya", "akhirah", "warnings"],
+    43: ["resurrection", "akhirah", "shirk"],
+    44: ["akhirah", "kibr", "warnings"],
+}

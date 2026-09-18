@@ -115,11 +115,13 @@
       "qabil"
     ],
     "tags": [
-      "creation",
-      "repentance",
-      "iblis",
-      "free-will",
-      "khalifah"
+      "story_adam",
+      "prophethood",
+      "human_creation",
+      "purpose_of_life",
+      "shaytan",
+      "tawbah",
+      "qadr"
     ]
   },
   {
@@ -185,10 +187,12 @@
       "iblis"
     ],
     "tags": [
-      "creation",
-      "repentance",
+      "story_adam",
+      "women",
+      "human_creation",
+      "marriage",
       "family",
-      "partnership"
+      "tawbah"
     ]
   },
   {
@@ -428,11 +432,9 @@
       "qabil"
     ],
     "tags": [
-      "deviated",
-      "arrogance",
+      "shaytan",
       "jinn",
-      "enemy",
-      "deception",
+      "story_adam",
       "kibr"
     ]
   },
@@ -850,12 +852,12 @@
       "iblis"
     ],
     "tags": [
-      "prophet",
-      "patience",
-      "flood",
+      "story_nuh",
+      "prophethood",
       "dawah",
+      "sabr",
       "family",
-      "straight"
+      "history_lessons"
     ]
   },
   {
@@ -892,10 +894,13 @@
       "wife_of_lut"
     ],
     "tags": [
-      "deviated",
-      "warning",
+      "story_nuh",
+      "women",
       "family",
-      "disbelief"
+      "kufr",
+      "amanah",
+      "warnings",
+      "parables"
     ]
   },
   {
@@ -945,10 +950,11 @@
       "wife_of_nuh"
     ],
     "tags": [
-      "deviated",
+      "story_nuh",
       "family",
-      "arrogance",
-      "flood"
+      "kufr",
+      "kibr",
+      "history_lessons"
     ]
   },
   {
@@ -1146,11 +1152,10 @@
       "people_of_aad"
     ],
     "tags": [
-      "prophet",
-      "straight",
-      "aad",
-      "wind",
-      "dawah"
+      "story_hud",
+      "prophethood",
+      "dawah",
+      "history_lessons"
     ]
   },
   {
@@ -1401,11 +1406,11 @@
       "people_of_thamud"
     ],
     "tags": [
-      "prophet",
-      "straight",
-      "thamud",
-      "she-camel",
-      "miracle"
+      "story_salih",
+      "prophethood",
+      "dawah",
+      "miracles",
+      "history_lessons"
     ]
   },
   {
@@ -2120,13 +2125,13 @@
       "nimrod"
     ],
     "tags": [
-      "prophet",
-      "straight",
-      "khalilullah",
+      "story_ibrahim",
+      "prophethood",
       "tawheed",
-      "test",
+      "trial_test",
       "kaaba",
-      "sacrifice"
+      "hajj",
+      "dawah"
     ]
   },
   {
@@ -2224,11 +2229,12 @@
       "nimrod"
     ],
     "tags": [
-      "deviated",
+      "story_ibrahim",
       "shirk",
+      "parents",
       "family",
       "dawah",
-      "idol-worship"
+      "kufr"
     ]
   },
   {
@@ -2270,11 +2276,11 @@
       "azar"
     ],
     "tags": [
-      "deviated",
-      "tyrant",
+      "story_ibrahim",
+      "oppression",
+      "kibr",
       "shirk",
-      "arrogance",
-      "power"
+      "leadership"
     ]
   },
   {
@@ -2378,12 +2384,13 @@
       "ishaq"
     ],
     "tags": [
-      "prophet",
-      "straight",
-      "sacrifice",
-      "submission",
+      "story_ismail",
+      "story_ibrahim",
+      "prophethood",
+      "trial_test",
+      "sabr",
       "kaaba",
-      "sabr"
+      "amanah"
     ]
   },
   {
@@ -2421,12 +2428,12 @@
       "ismail"
     ],
     "tags": [
-      "straight",
+      "story_ismail",
+      "story_ibrahim",
+      "women",
       "tawakkul",
       "hajj",
-      "zamzam",
-      "safa-marwa",
-      "mother"
+      "kaaba"
     ]
   },
   {
@@ -2470,9 +2477,12 @@
       "hajar"
     ],
     "tags": [
-      "straight",
-      "miracle",
-      "family"
+      "story_ishaq",
+      "story_ibrahim",
+      "women",
+      "family",
+      "miracles",
+      "glad_tidings"
     ]
   },
   {
@@ -2815,11 +2825,12 @@
       "people_of_lut"
     ],
     "tags": [
-      "prophet",
-      "straight",
-      "transgression",
-      "destruction",
-      "family"
+      "story_lut",
+      "prophethood",
+      "dawah",
+      "haya",
+      "family",
+      "history_lessons"
     ]
   },
   {
@@ -2884,10 +2895,13 @@
       "wife_of_nuh"
     ],
     "tags": [
-      "deviated",
-      "warning",
+      "story_lut",
+      "women",
       "family",
-      "disobedience"
+      "kufr",
+      "amanah",
+      "warnings",
+      "parables"
     ]
   },
   {
@@ -2981,10 +2995,12 @@
       "ismail"
     ],
     "tags": [
-      "prophet",
-      "straight",
+      "story_ishaq",
+      "story_ibrahim",
+      "prophethood",
       "family",
-      "miracle"
+      "miracles",
+      "glad_tidings"
     ]
   },
   {
@@ -3191,12 +3207,13 @@
       "sons_of_yaqub"
     ],
     "tags": [
-      "prophet",
-      "straight",
-      "patience",
-      "grief",
-      "family",
-      "hope"
+      "story_yaqub",
+      "story_yusuf",
+      "prophethood",
+      "sabr",
+      "grief_loss",
+      "hope_raja",
+      "family"
     ]
   },
   {
@@ -3632,13 +3649,13 @@
       "ibrahim"
     ],
     "tags": [
-      "prophet",
-      "straight",
-      "patience",
-      "chastity",
-      "forgiveness",
-      "power",
-      "dream"
+      "story_yusuf",
+      "prophethood",
+      "sabr",
+      "haya",
+      "hilm",
+      "leadership",
+      "knowledge"
     ]
   },
   {
@@ -3712,11 +3729,12 @@
       "yusuf"
     ],
     "tags": [
-      "mixed",
-      "temptation",
-      "confession",
-      "love",
-      "truth"
+      "story_yusuf",
+      "women",
+      "tazkiyah",
+      "haya",
+      "sidq",
+      "tawbah"
     ]
   },
   {
@@ -3915,11 +3933,11 @@
       "yaqub"
     ],
     "tags": [
-      "mixed",
-      "jealousy",
-      "betrayal",
-      "repentance",
-      "forgiveness"
+      "story_yusuf",
+      "family",
+      "hasad",
+      "amanah",
+      "tawbah"
     ]
   },
   {
@@ -4105,11 +4123,11 @@
       "people_of_midian"
     ],
     "tags": [
-      "prophet",
-      "straight",
-      "business-ethics",
-      "justice",
-      "midian"
+      "story_shuayb",
+      "prophethood",
+      "dawah",
+      "trade",
+      "adl"
     ]
   },
   {
@@ -5616,13 +5634,13 @@
       "samiri"
     ],
     "tags": [
-      "prophet",
-      "straight",
-      "liberation",
-      "law",
-      "miracle",
-      "patience",
-      "most-mentioned"
+      "story_musa",
+      "prophethood",
+      "oppression",
+      "revelation",
+      "miracles",
+      "sabr",
+      "story_bani_israil"
     ]
   },
   {
@@ -5798,11 +5816,12 @@
       "firawn"
     ],
     "tags": [
-      "prophet",
-      "straight",
-      "brotherhood",
-      "support",
-      "golden-calf"
+      "story_harun",
+      "story_musa",
+      "prophethood",
+      "family",
+      "leadership",
+      "story_bani_israil"
     ]
   },
   {
@@ -6354,12 +6373,12 @@
       "bani_israel"
     ],
     "tags": [
-      "deviated",
-      "tyrant",
-      "arrogance",
+      "story_musa",
+      "oppression",
+      "kibr",
       "shirk",
-      "power",
-      "egypt"
+      "leadership",
+      "history_lessons"
     ]
   },
   {
@@ -6399,13 +6418,13 @@
       "musa"
     ],
     "tags": [
-      "straight",
-      "faith",
+      "story_musa",
+      "women",
+      "iman",
       "oppression",
       "sabr",
-      "woman",
-      "greatest-women",
-      "jannah"
+      "jannah",
+      "parables"
     ]
   },
   {
@@ -6461,10 +6480,10 @@
       "musa"
     ],
     "tags": [
-      "deviated",
-      "tyrant",
+      "story_musa",
       "oppression",
-      "enabler"
+      "leadership",
+      "kibr"
     ]
   },
   {
@@ -6533,11 +6552,12 @@
       "bani_israel"
     ],
     "tags": [
-      "deviated",
+      "story_musa",
       "wealth",
-      "arrogance",
-      "gratitude",
-      "destroyed"
+      "kibr",
+      "shukr",
+      "dunya",
+      "history_lessons"
     ]
   },
   {
@@ -6590,11 +6610,10 @@
       "bani_israel"
     ],
     "tags": [
-      "deviated",
-      "golden-calf",
-      "deception",
-      "fitna",
-      "isolation"
+      "story_musa",
+      "story_bani_israil",
+      "shirk",
+      "trial_test"
     ]
   },
   {
@@ -6697,11 +6716,11 @@
       "musa"
     ],
     "tags": [
-      "straight",
-      "wisdom",
-      "divine-knowledge",
-      "apparent-vs-real",
-      "mercy"
+      "story_musa",
+      "knowledge",
+      "qadr",
+      "rahmah",
+      "sabr"
     ]
   },
   {
@@ -6825,12 +6844,13 @@
       "jalut"
     ],
     "tags": [
-      "prophet",
-      "straight",
-      "king",
-      "repentance",
-      "psalms",
-      "wisdom"
+      "story_dawud",
+      "prophethood",
+      "leadership",
+      "tawbah",
+      "revelation",
+      "knowledge",
+      "adl"
     ]
   },
   {
@@ -7077,13 +7097,13 @@
       "bilqis"
     ],
     "tags": [
-      "prophet",
-      "straight",
-      "king",
-      "wisdom",
-      "gratitude",
+      "story_sulayman",
+      "prophethood",
+      "leadership",
+      "knowledge",
+      "shukr",
       "jinn",
-      "power"
+      "animals"
     ]
   },
   {
@@ -7198,12 +7218,13 @@
       "sulayman"
     ],
     "tags": [
-      "straight",
-      "islam",
-      "queen",
-      "wisdom",
-      "submission",
-      "humility"
+      "story_sulayman",
+      "women",
+      "leadership",
+      "shura",
+      "iman",
+      "knowledge",
+      "kibr"
     ]
   },
   {
@@ -7264,13 +7285,13 @@
     ],
     "connections": [],
     "tags": [
-      "prophet",
-      "straight",
+      "story_ayyub",
+      "prophethood",
       "sabr",
-      "illness",
+      "health",
       "dua",
-      "restoration",
-      "patience"
+      "rahmah",
+      "trial_test"
     ]
   },
   {
@@ -7374,13 +7395,12 @@
       "people_of_yunus"
     ],
     "tags": [
-      "prophet",
-      "straight",
-      "whale",
+      "story_yunus",
+      "prophethood",
       "dua",
-      "darkness",
-      "repentance",
-      "sabr"
+      "tawbah",
+      "sabr",
+      "anxiety_fear"
     ]
   },
   {
@@ -7440,9 +7460,9 @@
     ],
     "connections": [],
     "tags": [
-      "prophet",
-      "straight",
-      "idol-worship",
+      "story_ilyas",
+      "prophethood",
+      "shirk",
       "dawah"
     ]
   },
@@ -7477,8 +7497,8 @@
       "ilyas"
     ],
     "tags": [
-      "prophet",
-      "straight"
+      "story_alyasa",
+      "prophethood"
     ]
   },
   {
@@ -7514,9 +7534,9 @@
     ],
     "connections": [],
     "tags": [
-      "prophet",
-      "straight",
-      "patience"
+      "story_dhulkifl",
+      "prophethood",
+      "sabr"
     ]
   },
   {
@@ -7559,11 +7579,10 @@
       "nuh"
     ],
     "tags": [
-      "prophet",
-      "straight",
-      "raised",
-      "patience",
-      "truthfulness"
+      "story_idris",
+      "prophethood",
+      "sabr",
+      "sidq"
     ]
   },
   {
@@ -7858,13 +7877,13 @@
       "musa"
     ],
     "tags": [
-      "prophet",
-      "straight",
-      "miracle",
-      "messiah",
-      "born-without-father",
-      "raised",
-      "return"
+      "story_isa",
+      "prophethood",
+      "miracles",
+      "story_maryam",
+      "ahl_al_kitab",
+      "tawheed",
+      "akhirah"
     ]
   },
   {
@@ -8027,13 +8046,13 @@
       "imran"
     ],
     "tags": [
-      "straight",
-      "chastity",
-      "miracle",
-      "chosen",
-      "mother",
-      "greatest-women",
-      "siddiqah"
+      "story_maryam",
+      "story_isa",
+      "women",
+      "haya",
+      "miracles",
+      "sidq",
+      "parables"
     ]
   },
   {
@@ -8137,13 +8156,13 @@
       "isa"
     ],
     "tags": [
-      "prophet",
-      "straight",
+      "story_zakariya",
+      "prophethood",
       "dua",
-      "miracle",
-      "heir",
-      "hope",
-      "old-age"
+      "hope_raja",
+      "miracles",
+      "family",
+      "story_maryam"
     ]
   },
   {
@@ -8206,12 +8225,12 @@
       "maryam"
     ],
     "tags": [
-      "prophet",
-      "straight",
-      "wisdom",
-      "chastity",
-      "parents",
-      "young"
+      "story_yahya",
+      "story_zakariya",
+      "prophethood",
+      "knowledge",
+      "haya",
+      "parents"
     ]
   },
   {
@@ -8269,13 +8288,12 @@
       "jibreel"
     ],
     "tags": [
-      "prophet",
-      "straight",
-      "seal-of-prophets",
-      "mercy",
-      "quran",
-      "character",
-      "final"
+      "story_muhammad",
+      "prophethood",
+      "revelation",
+      "rahmah",
+      "ihsan",
+      "love_of_allah"
     ]
   },
   {
@@ -8350,12 +8368,12 @@
       "isa"
     ],
     "tags": [
-      "angel",
-      "straight",
+      "angels",
       "revelation",
-      "wahi",
-      "trustworthy",
-      "powerful"
+      "amanah",
+      "story_muhammad",
+      "story_maryam",
+      "isra_miraj"
     ]
   },
   {
@@ -8386,10 +8404,9 @@
       "jibreel"
     ],
     "tags": [
-      "angel",
-      "straight",
-      "provision",
-      "rain"
+      "angels",
+      "rizq",
+      "nature_signs"
     ]
   },
   {
@@ -8477,11 +8494,9 @@
     ],
     "connections": [],
     "tags": [
-      "angel",
-      "straight",
-      "trumpet",
+      "angels",
       "resurrection",
-      "judgment-day"
+      "akhirah"
     ]
   },
   {
@@ -8514,11 +8529,8 @@
     ],
     "connections": [],
     "tags": [
-      "angel",
-      "straight",
-      "death",
-      "soul",
-      "appointed-time"
+      "angels",
+      "death_reminder"
     ]
   },
   {
@@ -8541,11 +8553,9 @@
     ],
     "connections": [],
     "tags": [
-      "angel",
-      "straight",
-      "grave",
-      "barzakh",
-      "questioning"
+      "angels",
+      "death_reminder",
+      "iman"
     ]
   },
   {
@@ -8573,11 +8583,10 @@
     ],
     "connections": [],
     "tags": [
-      "angel",
-      "straight",
-      "hell",
-      "justice",
-      "hereafter"
+      "angels",
+      "jahannam",
+      "akhirah",
+      "adl"
     ]
   },
   {
@@ -8605,11 +8614,9 @@
     ],
     "connections": [],
     "tags": [
-      "angel",
-      "straight",
-      "paradise",
-      "welcome",
-      "hereafter"
+      "angels",
+      "jannah",
+      "akhirah"
     ]
   },
   {
@@ -8640,11 +8647,10 @@
       "sulayman"
     ],
     "tags": [
-      "angel",
-      "straight",
-      "magic",
-      "trial",
-      "babylon"
+      "angels",
+      "shaytan",
+      "trial_test",
+      "ahl_al_kitab"
     ]
   },
   {
@@ -8699,13 +8705,13 @@
       "aisha"
     ],
     "tags": [
-      "companion",
-      "straight",
-      "siddiq",
-      "cave",
-      "hijra",
+      "sahabah",
+      "hijrah",
+      "sidq",
+      "tawakkul",
       "wealth",
-      "trust"
+      "zakat",
+      "story_muhammad"
     ]
   },
   {
@@ -8754,11 +8760,11 @@
       "muhammad"
     ],
     "tags": [
-      "companion",
-      "straight",
-      "sacrifice",
-      "courage",
-      "ithar"
+      "sahabah",
+      "prophets_household",
+      "ihsan",
+      "zakat",
+      "hijrah"
     ]
   },
   {
@@ -8830,12 +8836,12 @@
       "abu_bakr"
     ],
     "tags": [
-      "companion",
-      "straight",
-      "mother-of-believers",
-      "scholar",
-      "vindication",
-      "slander"
+      "prophets_household",
+      "sahabah",
+      "incident_ifk",
+      "women",
+      "knowledge",
+      "speech_ethics"
     ]
   },
   {
@@ -8886,11 +8892,11 @@
       "umm_jamil"
     ],
     "tags": [
-      "deviated",
-      "enemy",
+      "story_muhammad",
+      "kufr",
       "family",
-      "condemned",
-      "makkah"
+      "wealth",
+      "jahannam"
     ]
   },
   {
@@ -8928,10 +8934,11 @@
       "muhammad"
     ],
     "tags": [
-      "deviated",
-      "persecution",
-      "enemy",
-      "condemned"
+      "story_muhammad",
+      "women",
+      "oppression",
+      "kufr",
+      "jahannam"
     ]
   },
   {
@@ -9001,11 +9008,11 @@
       "sumayyah"
     ],
     "tags": [
-      "deviated",
-      "persecutor",
-      "enemy",
-      "badr",
-      "makkah"
+      "story_muhammad",
+      "oppression",
+      "kufr",
+      "kibr",
+      "battle_badr"
     ]
   },
   {
@@ -9034,12 +9041,11 @@
       "ammar"
     ],
     "tags": [
-      "companion",
-      "straight",
-      "martyr",
-      "first",
+      "sahabah",
       "women",
-      "sabr"
+      "sabr",
+      "oppression",
+      "iman"
     ]
   },
   {
@@ -9071,11 +9077,10 @@
       "muhammad"
     ],
     "tags": [
-      "companion",
-      "straight",
-      "coercion",
-      "martyrdom-family",
-      "faith"
+      "sahabah",
+      "oppression",
+      "iman",
+      "sabr"
     ]
   },
   {
@@ -9109,11 +9114,11 @@
       "muhammad"
     ],
     "tags": [
-      "companion",
-      "straight",
-      "adoption",
+      "sahabah",
+      "family",
       "marriage",
-      "divine-law"
+      "divorce",
+      "prophets_household"
     ]
   },
   {
@@ -9174,11 +9179,11 @@
     ],
     "connections": [],
     "tags": [
-      "straight",
-      "wisdom",
+      "story_luqman",
+      "knowledge",
       "parenting",
-      "advice",
-      "gratitude"
+      "shukr",
+      "adab"
     ]
   },
   {
@@ -9275,12 +9280,10 @@
     ],
     "connections": [],
     "tags": [
-      "straight",
-      "power",
-      "justice",
-      "yajuj-majuj",
-      "barrier",
-      "travel"
+      "story_dhulqarnayn",
+      "leadership",
+      "adl",
+      "akhirah"
     ]
   },
   {
@@ -9323,10 +9326,10 @@
       "zakariyya"
     ],
     "tags": [
-      "straight",
+      "story_maryam",
       "family",
-      "dedication",
-      "chosen"
+      "parenting",
+      "dua"
     ]
   },
   {
@@ -9376,11 +9379,11 @@
       "qabil"
     ],
     "tags": [
-      "straight",
-      "martyr",
-      "first-murder",
-      "sacrifice",
-      "non-retaliation"
+      "story_adam",
+      "taqwa",
+      "hilm",
+      "criminal_law",
+      "family"
     ]
   },
   {
@@ -9435,11 +9438,10 @@
       "iblis"
     ],
     "tags": [
-      "deviated",
-      "murder",
-      "envy",
-      "first-sin",
-      "hasad"
+      "story_adam",
+      "hasad",
+      "criminal_law",
+      "family"
     ]
   },
   {
@@ -9481,11 +9483,10 @@
       "talut"
     ],
     "tags": [
-      "deviated",
-      "warrior",
-      "oppressor",
-      "defeated",
-      "faith-vs-power"
+      "story_bani_israil",
+      "story_dawud",
+      "conflict",
+      "oppression"
     ]
   },
   {
@@ -9537,12 +9538,12 @@
       "bani_israel"
     ],
     "tags": [
-      "straight",
-      "king",
-      "test",
+      "story_bani_israil",
       "leadership",
-      "faith",
-      "bani-israel"
+      "trial_test",
+      "iman",
+      "conflict",
+      "sabr"
     ]
   },
   {
@@ -9634,12 +9635,12 @@
       "firawn"
     ],
     "tags": [
-      "group",
-      "mixed",
-      "covenant",
-      "prophets",
-      "blessings",
-      "ingratitude"
+      "story_bani_israil",
+      "amanah",
+      "prophethood",
+      "shukr",
+      "ahl_al_kitab",
+      "history_lessons"
     ]
   },
   {
@@ -9799,11 +9800,10 @@
       "hud"
     ],
     "tags": [
-      "group",
-      "deviated",
-      "arrogance",
-      "destroyed",
-      "wind"
+      "story_hud",
+      "kibr",
+      "kufr",
+      "history_lessons"
     ]
   },
   {
@@ -9971,11 +9971,10 @@
       "salih"
     ],
     "tags": [
-      "group",
-      "deviated",
-      "she-camel",
-      "destroyed",
-      "collective-responsibility"
+      "story_salih",
+      "kufr",
+      "miracles",
+      "history_lessons"
     ]
   },
   {
@@ -10113,11 +10112,10 @@
       "ibrahim"
     ],
     "tags": [
-      "group",
-      "deviated",
-      "transgression",
-      "destroyed",
-      "normalization"
+      "story_lut",
+      "haya",
+      "kufr",
+      "history_lessons"
     ]
   },
   {
@@ -10185,11 +10183,10 @@
       "musa"
     ],
     "tags": [
-      "group",
-      "deviated",
-      "business-ethics",
-      "destroyed",
-      "earthquake"
+      "story_shuayb",
+      "trade",
+      "kufr",
+      "history_lessons"
     ]
   },
   {
@@ -10246,12 +10243,10 @@
       "bani_israel"
     ],
     "tags": [
-      "group",
-      "deviated",
-      "sabbath",
-      "deception",
-      "transformed",
-      "test"
+      "story_bani_israil",
+      "trial_test",
+      "dawah",
+      "history_lessons"
     ]
   },
   {
@@ -10351,13 +10346,11 @@
     ],
     "connections": [],
     "tags": [
-      "group",
-      "straight",
-      "youth",
-      "faith",
-      "cave",
-      "sleep",
-      "resurrection-proof"
+      "story_ashab_al_kahf",
+      "iman",
+      "resurrection",
+      "miracles",
+      "tawakkul"
     ]
   },
   {
@@ -10412,12 +10405,11 @@
     ],
     "connections": [],
     "tags": [
-      "mixed",
-      "martyrdom",
-      "persecutors",
-      "faith",
-      "fire",
-      "persecution"
+      "oppression",
+      "iman",
+      "sabr",
+      "jahannam",
+      "history_lessons"
     ]
   },
   {
@@ -10653,12 +10645,12 @@
       "abu_bakr"
     ],
     "tags": [
-      "group",
-      "deviated",
-      "hypocrisy",
-      "deceit",
-      "lowest-hell",
-      "madinah"
+      "nifaq",
+      "jahannam",
+      "story_muhammad",
+      "battle_uhud",
+      "battle_ahzab",
+      "expedition_tabuk"
     ]
   },
   {
@@ -10720,12 +10712,10 @@
       "maryam"
     ],
     "tags": [
-      "group",
-      "straight",
-      "disciples",
-      "support",
-      "isa",
-      "table"
+      "story_isa",
+      "dawah",
+      "iman",
+      "miracles"
     ]
   },
   {
@@ -10765,12 +10755,10 @@
       "yunus"
     ],
     "tags": [
-      "group",
-      "straight",
-      "repentance",
-      "unique",
-      "mass-faith",
-      "nineveh"
+      "story_yunus",
+      "tawbah",
+      "iman",
+      "rahmah"
     ]
   }
 ]

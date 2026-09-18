@@ -1,0 +1,51 @@
+"""80 · 'Abasa · He Frowned · عبس — 42 ayaat (meccan)"""
+
+STATUS = "deep"
+
+TAGS = {
+    # 1–16 · The blind man who came seeking; the honoured scrolls
+    1: ["story_muhammad", "adl", "adab"],
+    2: ["story_muhammad", "health", "dawah"],
+    3: ["tazkiyah", "dawah"],
+    4: ["dhikr", "dawah"],
+    5: ["kibr", "wealth", "dawah"],
+    6: ["dawah", "kibr"],
+    7: ["dawah", "tazkiyah"],
+    8: ["dawah", "knowledge"],
+    9: ["taqwa", "dawah"],
+    10: ["dawah", "adab"],
+    11: ["revelation", "dhikr"],
+    12: ["revelation", "hidayah"],
+    13: ["revelation"],
+    14: ["revelation", "taharah"],
+    15: ["revelation", "angels"],
+    16: ["angels", "ihsan"],
+    # 17–32 · From what was man created? Then let him look at his food
+    17: ["kufr", "human_creation", "shukr"],
+    18: ["human_creation"],
+    19: ["human_creation", "qadr"],
+    20: ["human_creation", "hidayah"],
+    21: ["death_reminder"],
+    22: ["resurrection", "qadr"],
+    23: ["kufr", "commands"],
+    24: ["shukr", "nature_signs", "rizq"],
+    25: ["nature_signs", "rizq"],
+    26: ["nature_signs"],
+    27: ["nature_signs", "rizq"],
+    28: ["nature_signs", "rizq"],
+    29: ["nature_signs", "rizq"],
+    30: ["nature_signs"],
+    31: ["nature_signs", "rizq"],
+    32: ["nature_signs", "rizq", "animals"],
+    # 33–42 · The Deafening Blast, when a man flees from his own family
+    33: ["akhirah", "resurrection"],
+    34: ["akhirah", "family"],
+    35: ["akhirah", "family", "parents"],
+    36: ["akhirah", "family", "marriage"],
+    37: ["akhirah"],
+    38: ["akhirah", "jannah"],
+    39: ["jannah", "glad_tidings"],
+    40: ["akhirah", "jahannam"],
+    41: ["jahannam"],
+    42: ["jahannam", "kufr"],
+}

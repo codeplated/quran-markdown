@@ -12,7 +12,7 @@
 #  That's it. Everything else is self-contained below.
 # ══════════════════════════════════════════════════════════════════════════════
 import os
-VAULT_PATH       = "../Mushaf" 
+VAULT_PATH       = "../Tadabbur" 
 DEFAULT_PERSONALITY_PERSONAL = """
 ## 📝 Study Notes
 

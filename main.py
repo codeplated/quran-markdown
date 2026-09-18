@@ -3,12 +3,11 @@ import shutil
 import os
 import re
 import quranConnections as connections
+import audio_config as audio_config
  
-VAULT_PATH       = "../Mushaf" # root of your Obsidian vault     
-INDEX_PATH = "0 - Index"     
-#AUDIO_BASE_PATH  = "./data/audio"
-AUDIO_BASE_PATH  = "./data/AlafasyAudio"       # where audio files live on disk
-AUDIO_EXT        = ".mp3"
+VAULT_PATH       = "../Tadabbur" # root of your Obsidian vault     
+INDEX_PATH = "0 - Explore"     
+
 
 # USE_EXTERNAL_LINK = True  → <audio> tag with absolute file:// path (Option B)
 # USE_EXTERNAL_LINK = False → ![[vault/relative/path]] embed    (Option A)
@@ -21,7 +20,8 @@ BISMILLAH = "بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِ
 #BISMILLAH = "﷽"
 
 THUMBNAILS_SRC  = "thumbnailGenerator/thumbnails"        # relative to main.py
-THUMBNAILS_DEST = f"{VAULT_PATH}/attachments"  
+THUMBNAILS_DEST = f"{VAULT_PATH}/attachments"
+VAULT_FILES_SRC = "vault_files"   # hand-made files (canvases etc.) mirrored into the vault  
 
 DEFAULT_PERSONAL_SECTION = """
 ## 📝 Tafsir Notes
@@ -71,6 +71,7 @@ def asma_ul_husna_reader() -> None:
         daily_life = name["daily_life"]
         quran_occurrences = name["quran_occurrences"]
         key_ayaat = name["key_ayaat"]
+        tags = name.get("tags", [])
 
         content = build_asma_ul_husna_note(
             number,
@@ -85,7 +86,8 @@ def asma_ul_husna_reader() -> None:
             urdu_explanation,
             daily_life,
             quran_occurrences,
-            key_ayaat
+            key_ayaat,
+            tags,
         )
         folder = f"{VAULT_PATH}/{INDEX_PATH}/Asma Ul Husna"
         filename     = f"{number} - {arabic}.md"
@@ -105,6 +107,7 @@ def build_asma_ul_husna_note(
     daily_life:  str,
     quran_occurrences:str,
     key_ayaat:   list,
+    tags:        list,
     ) -> str:
     ayat_links = []
     for k in key_ayaat:
@@ -117,6 +120,7 @@ root_meaning: {root_meaning}
 category: {category}
 quran_occurrences: {quran_occurrences}
 key_ayaat: {key_ayaat}
+tags: {json.dumps(tags)}
 ---
 ## English Explanation 
 
@@ -136,34 +140,7 @@ key_ayaat: {key_ayaat}
 
 {SENTINEL_END}
 
-## Personal Notes
 """
-    
-
-def audio_path(surah_num: int, ayah_num: int) -> str:
-    """Returns the relative audio path: 017/001.mp3"""
-    folder = str(surah_num).zfill(3)
-    file   = str(ayah_num).zfill(3)
-    return f"{folder}/{file}{AUDIO_EXT}"
-
-def alafasy_audio_path(surah_num: int, ayah_num: int) -> str:
-    """Returns the relative audio path: 017001.mp3"""
-    folder = str(surah_num).zfill(3)
-    file   = str(ayah_num).zfill(3)
-    return f"{folder}{file}{AUDIO_EXT}"
-
-
-def audio_embed(surah_num: int, ayah_num: int) -> str:
-    """Returns the Obsidian markdown snippet to play the audio."""
-    rel_path = alafasy_audio_path(surah_num, ayah_num)
-
-    if USE_EXTERNAL_LINK:
-        abs_path = os.path.abspath(
-            os.path.join(AUDIO_BASE_PATH, rel_path)
-        ).replace("\\", "/")
-        return f'<audio controls src="file://{abs_path}"></audio>'
-    else:
-        return f"![[audio/{rel_path}]]"
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  TAFSIR LOADER
@@ -244,7 +221,7 @@ def build_generated_block(
     ur_name:       str,
     chapter_type:  str,
     tags:          list,
-    aliases:       list,
+    image:         str,
     ayah_text:     str,
     urdu_text:     str,
     english_text:  str,
@@ -254,9 +231,8 @@ def build_generated_block(
 ) -> str:
     """Returns the script-owned block, wrapped in sentinel markers."""
 
-    audio   = audio_embed(surah_num, ayah_num)
-    tag_str = json.dumps(tags) 
-    aliases_str = json.dumps(aliases)          # produces ["tag1", "tag2"] for YAML
+    audio   = audio_config.audio_embed(surah_num, ayah_num)
+    tag_str = json.dumps(tags)                 # produces ["tag1", "tag2"] for YAML
 
     return f"""---
 surah: {surah_num} / 114
@@ -264,7 +240,7 @@ surah_name: {en_name} / {ar_name} / {ur_name}
 ayah: {ayah_num} / {total_ayahs}
 type: {chapter_type}
 tags: {tag_str}
-aliases: {aliases_str}
+image: "{image}"
 ---
 {SENTINEL_START}
 ## 🔊 Recitation
@@ -322,28 +298,108 @@ def write_note(folder: str, filename: str, content: str) -> bool:
 #  INDEX BUILDER
 # ══════════════════════════════════════════════════════════════════════════════
 
+def theme_counts() -> dict:
+    """Returns {theme_key: how many notes carry that tag} — ayaat + personalities + names."""
+    counts = {key: 0 for key in connections.THEMES}
+    tag_lists = (
+        list(connections.AYAH_TAGS.values())
+        + [p.get("tags", []) for p in personalities]
+        + [n.get("tags", []) for n in asmaUlHusna]
+    )
+    for tags in tag_lists:
+        for tag in tags:
+            if tag in counts:
+                counts[tag] += 1
+    return counts
+
+
 def create_index():
     """Generates the master thematic index note."""
-    lines   = ["# 🗂 The General Topics of the Quran\n"]
+    # Built from chapter data directly — eng/arb_surah_names aren't populated yet
+    ref_note = f"47_24: {enChapters[46]['translation']} {urChapters[46]['name']}"
+    intro = (
+        "**Tadabbur** (تدبّر) means to reflect deeply, to ponder — the kind of "
+        "unhurried reading the Quran itself calls its readers to:\n\n"
+        "> “Then do they not reflect upon (yatadabbaroon) the Quran, or are there "
+        f"locks upon [their] hearts?” — [[{ref_note}|Quran 47:24]]\n\n"
+        "This site is a structured companion for that reflection: every ayah of all "
+        "114 surahs, laid out with recitation audio, Arabic text, Urdu and English "
+        "translation, and cross-linked by theme — so you can move from a single verse "
+        "to everywhere else in the Quran that verse’s ideas appear.\n\n"
+    )
+    lines   = [intro, "# 🗂 The General Topics of the Quran\n"]
+    lines.append(
+        "\n*Notes* counts how many notes carry each tag — ayaat plus the "
+        "personality and Name of Allah notes that share it.\n"
+    )
+    counts  = theme_counts()
     counter = 0
     category = None
- 
-    for key, (emoji, theme, en_title, ur_title, description) in connections.THEMES.items():
+
+    for key, (theme, en_title, ur_title, description) in connections.THEMES.items():
         if theme != category:
             category = theme
             lines.append(f"\n### {theme}\n")
-            lines.append("| # | Topic | Tag | Description |\n")
-            lines.append("|---|-------|-----|-------------|\n")
+            lines.append("| # | Topic | Tag | Notes | Description |\n")
+            lines.append("|---|-------|-----|-------|-------------|\n")
         counter += 1
         lines.append(
-            f"| {counter} | {emoji} **{en_title}** {ur_title} "
-            f"| [#{key}](#{key}) "
+            f"| {counter} | **{en_title}** {ur_title} "
+            f"| [#{key}](tags/{key}) "
+            f"| {counts[key]} "
             f"| {description} |\n"
         )
  
     content = "".join(lines)
-    write_note(f"{VAULT_PATH}/{INDEX_PATH}", "index.md", content)
+    write_note(VAULT_PATH, "index.md", content)
     print("  [INDEX]   index.md")
+
+
+# One card per surah (its first ayah note), in Mushaf order. The filename is
+# "2_1: ..." so the surah number is parsed from it — `surah` is "2 / 114" text.
+QURAN_BASE = """formulas:
+  surah_number: number(file.name.split("_")[0])
+views:
+  - type: cards
+    name: Surahs
+    filters:
+      and:
+        - file.name.contains("_1:")
+    order:
+      - file.name
+    sort:
+      - property: formula.surah_number
+        direction: ASC
+    rowHeight: tall
+    cardSize: 270
+    image: note.image
+    imageAspectRatio: 1
+"""
+
+
+def create_quran_base():
+    """Writes the Quran.base view into the explore folder (skipped if it exists,
+    so view tweaks made inside Obsidian are kept)."""
+    folder = f"{VAULT_PATH}/{INDEX_PATH}"
+    if os.path.exists(os.path.join(folder, "Quran.base")):
+        return
+    write_note(folder, "Quran.base", QURAN_BASE)
+    print("  [INDEX]   Quran.base")
+
+
+def copy_vault_files():
+    """Copies everything under vault_files/ into the vault at the same relative
+    path. Existing files are skipped so edits made inside Obsidian are kept."""
+    for root, _, files in os.walk(VAULT_FILES_SRC):
+        rel = os.path.relpath(root, VAULT_FILES_SRC)
+        dest_folder = os.path.normpath(os.path.join(VAULT_PATH, rel))
+        for name in files:
+            dest = os.path.join(dest_folder, name)
+            if os.path.exists(dest):
+                continue
+            os.makedirs(dest_folder, exist_ok=True)
+            shutil.copy2(os.path.join(root, name), dest)
+            print(f"  [NEW]     {os.path.join(rel, name)}")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -452,8 +508,7 @@ def _build_personality_generated_block(p: dict, all_personalities: list) -> str:
         for i, lesson in enumerate(p.get("lessons", []))
     ) or "_No lessons recorded._"
 
-    return f"""{SENTINEL_START}
----
+    return f"""---
 id: {p['id']}
 name: "{p['name_english']} / {p['name_arabic']} / {p['name_urdu']}"
 type: {type_en}
@@ -461,7 +516,7 @@ path: {path_en}
 era: "{p.get('era', '—')}"
 tags: {tags_str}
 ---
-
+{SENTINEL_START}
 # {type_emoji} {p['name_english']} — {p['name_arabic']}
 ### {p['name_urdu']}
 
@@ -519,7 +574,8 @@ def _get_personality_filepath(p: dict) -> tuple:
 def personalities_reader(all_personalities: list) -> None:
     """
     Reads the personalities list and writes one Obsidian note per entry,
-    then writes four index notes under Personalities/_Index/.
+    then writes Personalities/index.md and three filtered indexes under
+    Personalities/Filtered/.
     """
     print()
     print("=" * 60)
@@ -554,12 +610,13 @@ def personalities_reader(all_personalities: list) -> None:
 def _write_personalities_indexes(all_personalities: list) -> None:
     """Writes four clean index notes."""
 
-    folder = f"{VAULT_PATH}/{INDEX_PATH}/Personalities/_Index"
+    folder          = f"{VAULT_PATH}/{INDEX_PATH}/Personalities"
+    filtered_folder = f"{folder}/Filtered"
 
     _write_all_index(all_personalities, folder)
-    _write_path_index(all_personalities, folder, "straight")
-    _write_path_index(all_personalities, folder, "deviated")
-    _write_path_index(all_personalities, folder, "mixed")
+    _write_path_index(all_personalities, filtered_folder, "straight")
+    _write_path_index(all_personalities, filtered_folder, "deviated")
+    _write_path_index(all_personalities, filtered_folder, "mixed")
 
 
 def _write_all_index(all_personalities: list, folder: str) -> None:
@@ -587,8 +644,8 @@ def _write_all_index(all_personalities: list, folder: str) -> None:
             lines.append(f"| {i} | {link} | {path_emoji} {path_label} | {era} |\n")
 
     content = "".join(lines)
-    write_note(folder, "All Personalities.md", content)
-    print(f"  [INDEX]   Personalities/_Index/All Personalities.md")
+    write_note(folder, "index.md", content)
+    print(f"  [INDEX]   Personalities/index.md")
 
 
 def _write_path_index(all_personalities: list, folder: str, path: str) -> None:
@@ -660,13 +717,12 @@ def _write_path_index(all_personalities: list, folder: str, path: str) -> None:
     filename = filename_map[path]
     content  = "".join(lines)
     write_note(folder, filename, content)
-    print(f"  [INDEX]   Personalities/_Index/{filename}")
+    print(f"  [INDEX]   Personalities/Filtered/{filename}")
 
-def get_surah_aliases(surahNumber:str) -> list:
-    """Return list of surah aliases for a given surah."""
+def get_surah_image(surahNumber:str) -> str:
+    """Return the thumbnail path for a given surah."""
     surahNumber = surahNumber.zfill(3)
-    thumbnail_name = f"attachments/surah_{surahNumber}.png"
-    return [thumbnail_name]
+    return f"/attachments/surah_{surahNumber}.png"
 
 def copy_thumbnails() -> None:
     """
@@ -746,6 +802,8 @@ def main():
     print("=" * 60)
 
     create_index()
+    create_quran_base()
+    copy_vault_files()
     created = 0
     updated = 0
 
@@ -781,11 +839,11 @@ def main():
             english_text = english[surah_num_str][ayah_idx]["text"]
             tafsir_text  = load_tafsir_ur(surah_num_str, ayah_num)
             tags         = connections.get_ayah_themes(surah_num, ayah_num)
-            aliases = get_surah_aliases(surah_num_str)
+            image        = get_surah_image(surah_num_str)
             # ── Build & write
             generated = build_generated_block(
                 surah_num, ayah_num, total_ayahs,
-                en_name, ar_name, ur_name, chapter_type, tags, aliases,
+                en_name, ar_name, ur_name, chapter_type, tags, image,
                 ayah_text, urdu_text, english_text, tafsir_text,
                 prev_link, next_link,
             )

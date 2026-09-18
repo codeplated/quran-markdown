@@ -1,0 +1,63 @@
+"""14 · Ibrahim · Abraham · إبراهيم — 52 ayaat (meccan)"""
+
+STATUS = "deep"
+
+TAGS = {
+    # 1–8 · From darkness to light; gratitude brings increase
+    1: ["muqattaat", "revelation", "hidayah"],
+    2: ["tawheed", "kufr", "warnings"],
+    3: ["dunya", "akhirah", "kufr"],
+    4: ["prophethood", "hidayah", "qadr"],
+    5: ["story_musa", "hidayah", "sabr", "shukr"],
+    6: ["story_musa", "story_bani_israil", "shukr", "oppression"],
+    7: ["shukr", "glad_tidings", "warnings"],
+    8: ["story_musa", "tawheed"],
+    # 9–23 · Messengers and their peoples; Shaytan disowns his followers
+    9: ["history_lessons", "kufr", "prophethood"],
+    10: ["prophethood", "tawheed", "rahmah", "kufr"],
+    11: ["prophethood", "tawakkul"],
+    12: ["prophethood", "tawakkul", "sabr", "hidayah"],
+    13: ["prophethood", "oppression", "kufr"],
+    14: ["glad_tidings", "taqwa"],
+    15: ["prophethood", "kibr", "oppression"],
+    16: ["jahannam"],
+    17: ["jahannam"],
+    18: ["parables", "kufr"],
+    19: ["nature_signs", "qadr"],
+    20: ["qadr"],
+    21: ["akhirah", "leadership", "kibr"],
+    22: ["shaytan", "akhirah", "shirk"],
+    23: ["jannah", "iman", "glad_tidings"],
+    # 24–34 · The good word and the bad word; countless favours
+    24: ["parables", "tawheed", "iman", "speech_ethics"],
+    25: ["parables", "iman"],
+    26: ["parables", "kufr"],
+    27: ["iman", "hidayah", "death_reminder"],
+    28: ["shukr", "kufr", "leadership"],
+    29: ["jahannam"],
+    30: ["shirk", "jahannam"],
+    31: ["salah", "zakat", "commands", "akhirah"],
+    32: ["nature_signs", "rizq", "shukr"],
+    33: ["nature_signs", "shukr"],
+    34: ["shukr", "rahmah", "human_creation", "nature_signs"],
+    # 35–41 · The duas of Ibrahim for Makkah and his offspring
+    35: ["story_ibrahim", "dua", "kaaba", "shirk"],
+    36: ["story_ibrahim", "dua", "shirk", "rahmah"],
+    37: ["story_ibrahim", "story_ismail", "dua", "kaaba", "salah", "rizq"],
+    38: ["story_ibrahim", "dua", "taqwa"],
+    39: ["story_ibrahim", "story_ismail", "story_ishaq", "shukr", "dua"],
+    40: ["story_ibrahim", "dua", "salah", "family"],
+    41: ["story_ibrahim", "dua", "parents", "family", "akhirah"],
+    # 42–52 · The Day the earth is replaced
+    42: ["oppression", "akhirah", "warnings"],
+    43: ["akhirah"],
+    44: ["akhirah", "warnings", "dawah"],
+    45: ["history_lessons", "parables"],
+    46: ["qadr"],
+    47: ["prophethood", "qadr"],
+    48: ["akhirah", "tawheed", "asma_ul_husna"],
+    49: ["akhirah", "jahannam"],
+    50: ["jahannam"],
+    51: ["akhirah", "adl"],
+    52: ["revelation", "tawheed", "knowledge"],
+}

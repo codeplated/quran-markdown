@@ -1,0 +1,66 @@
+"""34 · Saba · Sheba · سبإ — 54 ayaat (meccan)"""
+
+STATUS = "deep"
+
+TAGS = {
+    # 1–9 · The Knower of the unseen; the Hour will surely come
+    1: ["dhikr", "tawheed", "asma_ul_husna"],
+    2: ["knowledge", "asma_ul_husna"],
+    3: ["akhirah", "kufr", "knowledge"],
+    4: ["iman", "glad_tidings"],
+    5: ["kufr", "warnings"],
+    6: ["revelation", "knowledge", "hidayah"],
+    7: ["resurrection", "kufr"],
+    8: ["kufr", "resurrection", "story_muhammad"],
+    9: ["nature_signs", "warnings", "tawbah"],
+    # 10–14 · Dawud and Sulayman: iron, wind, jinn and a staff eaten by a worm
+    10: ["story_dawud", "dhikr", "miracles", "nature_signs"],
+    11: ["story_dawud", "work_ethics", "ihsan"],
+    12: ["story_sulayman", "miracles", "jinn"],
+    13: ["story_sulayman", "jinn", "shukr", "work_ethics"],
+    14: ["story_sulayman", "death_reminder", "jinn", "knowledge"],
+    # 15–21 · The people of Saba and the flood of the dam
+    15: ["history_lessons", "rizq", "shukr"],
+    16: ["history_lessons", "shukr"],
+    17: ["history_lessons", "shukr", "kufr"],
+    18: ["history_lessons", "rizq", "anxiety_fear"],
+    19: ["history_lessons", "shukr", "sabr"],
+    20: ["shaytan", "history_lessons"],
+    21: ["shaytan", "trial_test", "akhirah"],
+    # 22–30 · Who provides for you? Sent to all of mankind
+    22: ["shirk"],
+    23: ["akhirah", "angels", "asma_ul_husna"],
+    24: ["rizq", "tawheed", "hidayah"],
+    25: ["adl", "dawah"],
+    26: ["akhirah", "asma_ul_husna"],
+    27: ["shirk", "tawheed"],
+    28: ["story_muhammad", "prophethood", "dawah"],
+    29: ["akhirah", "kufr"],
+    30: ["akhirah", "time"],
+    # 31–42 · Leaders and followers blame each other; wealth does not bring nearness
+    31: ["revelation", "akhirah", "kibr", "oppression"],
+    32: ["akhirah", "kibr"],
+    33: ["akhirah", "kibr", "shirk"],
+    34: ["prophethood", "wealth", "kufr"],
+    35: ["wealth", "kibr", "dunya"],
+    36: ["rizq", "qadr"],
+    37: ["wealth", "iman", "jannah"],
+    38: ["kufr", "warnings"],
+    39: ["rizq", "zakat", "glad_tidings"],
+    40: ["akhirah", "angels", "shirk"],
+    41: ["angels", "jinn", "shirk"],
+    42: ["akhirah", "jahannam"],
+    # 43–54 · Stand for Allah and reflect; truth has come
+    43: ["kufr", "revelation"],
+    44: ["revelation", "prophethood"],
+    45: ["history_lessons"],
+    46: ["knowledge", "dawah", "story_muhammad"],
+    47: ["ikhlas", "dawah"],
+    48: ["revelation", "knowledge"],
+    49: ["revelation", "hidayah"],
+    50: ["hidayah", "revelation"],
+    51: ["akhirah", "anxiety_fear"],
+    52: ["akhirah", "iman"],
+    53: ["kufr"],
+    54: ["akhirah", "history_lessons"],
+}

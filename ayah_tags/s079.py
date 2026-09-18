@@ -1,0 +1,56 @@
+"""79 · An-Nazi'at · Those who drag forth · النازعات — 46 ayaat (meccan)"""
+
+STATUS = "deep"
+
+TAGS = {
+    # 1–14 · Oaths by the angels; the blast that convulses creation
+    1: ["oaths", "angels", "death_reminder"],
+    2: ["oaths", "angels", "death_reminder"],
+    3: ["oaths", "angels"],
+    4: ["oaths", "angels"],
+    5: ["oaths", "angels", "qadr"],
+    6: ["akhirah", "resurrection"],
+    7: ["akhirah", "resurrection"],
+    8: ["akhirah", "anxiety_fear"],
+    9: ["akhirah"],
+    10: ["resurrection", "kufr"],
+    11: ["resurrection", "kufr"],
+    12: ["resurrection", "kufr"],
+    13: ["resurrection", "akhirah"],
+    14: ["resurrection", "akhirah"],
+    # 15–26 · Musa and Pharaoh's 'I am your most exalted lord'
+    15: ["story_musa"],
+    16: ["story_musa", "revelation"],
+    17: ["story_musa", "oppression", "dawah"],
+    18: ["story_musa", "dawah", "tazkiyah"],
+    19: ["story_musa", "dawah", "taqwa", "hidayah"],
+    20: ["story_musa", "miracles"],
+    21: ["story_musa", "kufr"],
+    22: ["story_musa", "kufr"],
+    23: ["story_musa", "kibr", "leadership"],
+    24: ["story_musa", "kibr", "shirk"],
+    25: ["story_musa", "history_lessons", "warnings"],
+    26: ["history_lessons", "taqwa", "warnings"],
+    # 27–33 · Are you harder to create than the heaven?
+    27: ["resurrection", "nature_signs", "human_creation"],
+    28: ["nature_signs"],
+    29: ["nature_signs", "time"],
+    30: ["nature_signs"],
+    31: ["nature_signs", "rizq"],
+    32: ["nature_signs"],
+    33: ["nature_signs", "rizq", "animals"],
+    # 34–46 · The Overwhelming Calamity; who restrained the soul from desire
+    34: ["akhirah"],
+    35: ["akhirah", "dhikr"],
+    36: ["jahannam", "akhirah"],
+    37: ["kibr", "oppression", "jahannam"],
+    38: ["dunya", "akhirah"],
+    39: ["jahannam"],
+    40: ["taqwa", "tazkiyah", "akhirah"],
+    41: ["jannah", "glad_tidings", "akhirah"],
+    42: ["they_ask_you", "akhirah"],
+    43: ["akhirah", "knowledge", "story_muhammad"],
+    44: ["akhirah", "knowledge"],
+    45: ["dawah", "taqwa", "akhirah"],
+    46: ["akhirah", "time", "dunya"],
+}

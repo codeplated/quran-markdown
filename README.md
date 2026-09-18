@@ -50,13 +50,13 @@ Generates one Obsidian note per ayah with:
    ```bash
    python QuranImportScript.py
    ```
-4. Generated files will be placed in the `../Mushaf` directory
+4. Generated files will be placed in the `../Tadabbur` directory
 
 ## File Structure
 
 Generated files are organized by surah number and chapter name:
 ```
-../Mushaf/
+../Tadabbur/
 └── 001 - Al-Fatiha Al-Fatiha/
     └── 001_001: Al-Fatiha Al-Fatiha.md
 ```

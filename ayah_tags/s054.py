@@ -1,0 +1,67 @@
+"""54 · Al-Qamar · The Moon · القمر — 55 ayaat (meccan)"""
+
+STATUS = "deep"
+
+TAGS = {
+    # 1–8 · The moon split; the Caller on the Day of Emergence
+    1: ["akhirah", "miracles", "story_muhammad"],
+    2: ["kufr", "miracles"],
+    3: ["kufr", "tazkiyah", "qadr"],
+    4: ["history_lessons", "warnings"],
+    5: ["knowledge", "warnings"],
+    6: ["akhirah", "resurrection"],
+    7: ["resurrection", "akhirah"],
+    8: ["akhirah", "kufr"],
+    # 9–17 · Nuh and the flood — "We have made the Quran easy to remember"
+    9: ["story_nuh", "kufr", "speech_ethics"],
+    10: ["story_nuh", "dua"],
+    11: ["story_nuh", "nature_signs", "history_lessons"],
+    12: ["story_nuh", "qadr", "history_lessons"],
+    13: ["story_nuh", "miracles"],
+    14: ["story_nuh", "rahmah"],
+    15: ["story_nuh", "history_lessons", "dhikr"],
+    16: ["warnings"],
+    17: ["quran_recitation", "revelation", "dhikr"],
+    # 18–22 · 'Ad
+    18: ["story_hud", "kufr", "warnings"],
+    19: ["story_hud", "history_lessons"],
+    20: ["story_hud", "history_lessons"],
+    21: ["warnings"],
+    22: ["quran_recitation", "revelation", "dhikr"],
+    # 23–32 · Thamud and the she-camel
+    23: ["story_salih", "kufr"],
+    24: ["story_salih", "kibr", "prophethood"],
+    25: ["story_salih", "kibr", "sidq"],
+    26: ["story_salih", "warnings"],
+    27: ["story_salih", "miracles", "trial_test", "sabr", "animals"],
+    28: ["story_salih", "animals", "adl"],
+    29: ["story_salih", "animals", "oppression"],
+    30: ["story_salih", "warnings"],
+    31: ["story_salih", "history_lessons"],
+    32: ["quran_recitation", "revelation", "dhikr"],
+    # 33–42 · Lut and the people of Pharaoh
+    33: ["story_lut", "kufr"],
+    34: ["story_lut", "history_lessons", "family"],
+    35: ["story_lut", "shukr", "rahmah"],
+    36: ["story_lut", "warnings"],
+    37: ["story_lut", "haya", "adab", "miracles"],
+    38: ["story_lut", "history_lessons"],
+    39: ["story_lut", "warnings"],
+    40: ["quran_recitation", "revelation", "dhikr"],
+    41: ["story_musa", "warnings"],
+    42: ["story_musa", "history_lessons", "qadr"],
+    # 43–55 · Everything created by decree; the righteous near the Sovereign
+    43: ["kufr", "revelation"],
+    44: ["kufr", "kibr"],
+    45: ["conflict", "battle_badr", "kufr"],
+    46: ["akhirah", "warnings"],
+    47: ["kufr", "jahannam"],
+    48: ["jahannam", "kufr"],
+    49: ["qadr", "nature_signs"],
+    50: ["qadr"],
+    51: ["history_lessons", "dhikr"],
+    52: ["akhirah", "qadr"],
+    53: ["akhirah", "qadr"],
+    54: ["jannah", "taqwa"],
+    55: ["jannah", "asma_ul_husna"],
+}
