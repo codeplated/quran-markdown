@@ -88,3 +88,9 @@ dmypy.json
 # OS generated files
 .DS_Store
 Thumbs.db
+# ── Recitation audio — licensed third-party material, local only ──────────────
+# Not redistributed with this repo. The generator does not need it: the default
+# AUDIO_MODE=api streams from a CDN. Set AUDIO_MODE=local in .env to use these.
+# See docs/LICENSES.md for provenance and how to obtain the files.
+data/audio/
+data/AlafasyAudio/
