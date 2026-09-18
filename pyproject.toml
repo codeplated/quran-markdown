@@ -1,0 +1,20 @@
+[project]
+name = "tadabbur-generator"
+version = "1.0.0"
+description = "Generates the Tadabbur Quran knowledge-base vault as Obsidian markdown notes."
+readme = "README.md"
+
+# 3.12 is a hard floor: the note builders use f-strings containing backslash
+# escapes, which is a syntax error on 3.11 and earlier.
+requires-python = ">=3.12"
+
+# No third-party dependencies, by design — clone the repo and run it.
+dependencies = []
+
+[project.optional-dependencies]
+# Only needed to regenerate surah thumbnails; the note generator never imports these.
+thumbnails = ["Pillow", "requests"]
+
+[tool.setuptools]
+py-modules = ["main", "config", "quranConnections", "tag_audit"]
+packages = ["tadabbur", "ayah_tags"]
