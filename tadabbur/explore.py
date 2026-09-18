@@ -67,7 +67,7 @@ def write_index() -> None:
 
     lines = [
         _intro(),
-        "# 🗂 The General Topics of the Quran\n",
+        "# The General Topics of the Quran\n",
         "\n*Notes* counts how many notes carry each tag — ayaat plus the "
         "personality and Name of Allah notes that share it.\n",
     ]
@@ -91,6 +91,32 @@ def write_index() -> None:
         )
 
     notes.write_plain(config.VAULT_PATH, "index.md", "".join(lines))
+
+
+def write_explore_index() -> None:
+    """
+    The Explore folder's own page.
+
+    Left to itself the site lists the folder — two links, no counts, and no
+    Quran.base at all, because a folder listing leaves .base files out. That
+    hides the surah grid from the one page meant to lead to it.
+    """
+    lines = [
+        "# Explore\n\n",
+        "Ways into the Quran beyond reading it surah by surah.\n\n",
+        "| Section | What it holds |\n",
+        "|---------|---------------|\n",
+        f"| [[{config.EXPLORE_DIR}/Quran.base\\|The Quran]] "
+        f"| all {data.SURAH_COUNT} surahs as cards, in order |\n",
+        f"| [[{config.ASMA_DIR}/index\\|Asma ul Husna]] "
+        f"| the {len(data.asma_ul_husna)} Names, grouped by what they tell us |\n",
+        f"| [[{config.PERSONALITIES_DIR}/index\\|Personalities]] "
+        f"| {len(data.personalities)} prophets, companions, groups and figures |\n",
+        f"| [Themes](tags) "
+        f"| every one of the {len(connections.THEMES)} themes, A–Z |\n",
+    ]
+
+    notes.write_plain(config.VAULT_PATH / config.EXPLORE_DIR, "index.md", "".join(lines))
 
 
 def write_quran_base() -> None:

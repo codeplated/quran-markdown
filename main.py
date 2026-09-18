@@ -3,8 +3,8 @@
 Generates the Tadabbur Obsidian vault from the dataset in data/.
 
     python main.py                 build everything
-    python main.py --only ayaat    build one part (ayaat, asma, personalities,
-                                   index, assets) — repeatable
+    python main.py --only ayaat    build one part (ayaat, surahs, asma,
+                                   personalities, index, assets) — repeatable
     python main.py --vault ../Test write somewhere else, without touching .env
     python main.py --quiet         only the summary
 
@@ -30,12 +30,14 @@ def build(parts: set, quiet: bool) -> None:
     """Runs the requested build steps in dependency order."""
     # Imported here so that --help and config errors are reported before the
     # dataset is read into memory.
-    from tadabbur import assets, asma_notes, ayah_notes, explore, personalities
+    from tadabbur import (assets, asma_notes, ayah_notes, explore, personalities,
+                          surah_index)
 
     results = []
 
     if "index" in parts:
         explore.write_index()
+        explore.write_explore_index()
         explore.write_quran_base()
         results.append(("Index & base view", None, None))
 
@@ -47,6 +49,11 @@ def build(parts: set, quiet: bool) -> None:
         if not quiet:
             print("  Ayaat …", flush=True)
         results.append(("Ayaat", *ayah_notes.generate()))
+
+    if "surahs" in parts:
+        if not quiet:
+            print("  Surah indexes …", flush=True)
+        results.append(("Surah indexes", *surah_index.generate()))
 
     if "asma" in parts:
         if not quiet:
@@ -72,7 +79,7 @@ def build(parts: set, quiet: bool) -> None:
     print("=" * 62)
 
 
-ALL_PARTS = ("index", "assets", "ayaat", "asma", "personalities")
+ALL_PARTS = ("index", "assets", "ayaat", "surahs", "asma", "personalities")
 
 
 def parse_args(argv=None) -> argparse.Namespace:

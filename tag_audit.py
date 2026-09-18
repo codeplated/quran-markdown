@@ -21,7 +21,7 @@ import quranConnections as qc
 PROGRESS_FILE = "TAGGING_PROGRESS.md"
 TABLE_START   = "<!-- AUDIT:START -->"
 TABLE_END     = "<!-- AUDIT:END -->"
-STATUS_ICON   = {"todo": "⬜ todo", "seed": "🌱 seed", "deep": "✅ deep"}
+STATUS_LABEL  = {"todo": "todo", "seed": "seed", "deep": "deep"}
 
 
 def load_json(path: str):
@@ -57,7 +57,7 @@ def audit_ayaat(errors: list, warnings: list) -> None:
     for ch in chapters:
         s, total = ch["id"], ch["total_verses"]
         status = qc.SURAH_STATUS[s]
-        if status not in STATUS_ICON:
+        if status not in STATUS_LABEL:
             errors.append(f"ayah_tags/s{s:03d}.py: unknown STATUS '{status}'")
         tagged = [a for (ss, a) in qc.AYAH_TAGS if ss == s]
         for a in tagged:
@@ -167,7 +167,7 @@ def status_table() -> str:
         density = f"{sum(map(len, rows)) / len(rows):.1f}" if rows else "—"
         lines.append(
             f"| {s} | {ch['transliteration']} | {ch['total_verses']} | {len(rows)} "
-            f"| {density} | {STATUS_ICON.get(qc.SURAH_STATUS[s], qc.SURAH_STATUS[s])} |"
+            f"| {density} | {STATUS_LABEL.get(qc.SURAH_STATUS[s], qc.SURAH_STATUS[s])} |"
         )
     unused = [k for k, (a, _, _) in theme_usage().items() if a == 0]
     if unused:

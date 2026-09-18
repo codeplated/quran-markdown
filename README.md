@@ -97,11 +97,11 @@ tags: ["tawheed", "asma_ul_husna"]
 image: "/attachments/surah_002.png"
 ---
 <!-- GENERATED:START -->
-## 🔊 Recitation
+## Recitation
 ...Arabic, Urdu, English, tafsir, navigation...
 <!-- GENERATED:END -->
 
-## 📝 Tafsir Notes          ← everything from here down is yours
+## Tafsir Notes          ← everything from here down is yours
 ```
 
 The generator rewrites only what sits between the two markers.

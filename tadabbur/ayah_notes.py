@@ -45,7 +45,7 @@ def build(surah: data.Surah, ayah: int, texts: dict) -> str:
         "image": f'"{thumbnail_link(surah.number)}"',
     })
 
-    body = f"""## 🔊 Recitation
+    body = f"""## Recitation
 
 {audio.audio_embed(surah.number, ayah)}
 **Next:** {following}
@@ -58,19 +58,19 @@ def build(surah: data.Surah, ayah: int, texts: dict) -> str:
 
 ---
 
-## 🇵🇰 Urdu
+## Urdu
 
 {texts['urdu']}
 
 ---
 
-## 🇬🇧 English
+## English
 
 {texts['english']}
 
 ---
 
-## 🇵🇰 Tafsir — Bayan ul Quran
+## Tafsir — Bayan ul Quran
 
 {texts['tafsir']}
 

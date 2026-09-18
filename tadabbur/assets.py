@@ -17,7 +17,7 @@ def copy_thumbnails() -> int:
     destination = config.VAULT_PATH / config.ATTACHMENTS_DIR
 
     if not source.is_dir():
-        print(f"  ⚠️  no thumbnails at {source} — skipping")
+        print(f"  warning: no thumbnails at {source} — skipping")
         return 0
 
     destination.mkdir(parents=True, exist_ok=True)
@@ -35,7 +35,7 @@ def copy_thumbnails() -> int:
             shutil.copy2(image, target)
             copied += 1
         except OSError as error:
-            print(f"  ⚠️  could not copy {image.name}: {error}")
+            print(f"  warning: could not copy {image.name}: {error}")
 
     return copied
 
