@@ -38,11 +38,12 @@ tadabbur-generator/
 ├── data/                   ← READ BELOW BEFORE TOUCHING
 │   ├── quran.json          ← Arabic text
 │   ├── en.json             ← English translation (Sahih International)
-│   ├── ur.json             ← Urdu translation (Jalandhry)
+│   ├── ur.json             ← Urdu translation (Maududi, Tafheem ul Quran)
 │   ├── asma_ul_husna.json  ← 99 names of Allah
 │   ├── quran_personalities.json  ← 79 personalities
 │   ├── chapters/{en,ur}.json     ← surah names
-│   ├── ur-tazkirul-quran/  ← Urdu tafsir, one JSON per ayah
+│   ├── ur-bayan-ul-quran/  ← Urdu tafsir (Dr. Israr Ahmad), one JSON per ayah
+│   ├── ur-tazkirul-quran/  ← Urdu tafsir (Maulana Wahiduddin Khan), one JSON per ayah
 │   ├── audio/              ← gitignored, local only, licensed
 │   └── AlafasyAudio/       ← gitignored, local only, licensed
 └── thumbnailGenerator/
@@ -58,7 +59,7 @@ The files in `/data` are the raw Quran dataset. **Do not edit, restructure,
 rename, or delete any file here unless explicitly asked.**
 
 - `quran.json`, `en.json`, `ur.json` — never edit, these are the authoritative source
-- `ur-tazkirul-quran/` — 6,350 JSON files, do not restructure
+- `ur-bayan-ul-quran/`, `ur-tazkirul-quran/` — 6,236 JSON files each, do not restructure (see docs/LICENSES.md §4)
 - `data/audio/`, `data/AlafasyAudio/` — gitignored, licensed, never commit these
 - If a data file seems wrong, report it — do not fix it silently
 

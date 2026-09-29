@@ -8,8 +8,8 @@ import quranConnections as connections
 from tadabbur import data, notes
 
 # Both theme tables carry the same counts, so both explain them the same way.
-COUNTS_NOTE = ("*Notes* counts how many notes carry each tag — ayaat plus the "
-               "personality and Name of Allah notes that share it.\n")
+COUNTS_NOTE = ("*Notes* is the number of notes that carry each tag: the ayaat, "
+               "plus any personality or Name of Allah notes that share it.\n")
 
 # The A–Z themes note. Its filename is the sidebar label, its wikilink target
 # and its page title, and three pages link to it, so it is named once here.
@@ -91,14 +91,17 @@ def theme_counts() -> dict:
 def _intro() -> str:
     reference = data.SURAHS[47].note_name(24)
     return (
-        "**Tadabbur** (تدبّر) means to reflect deeply, to ponder — the kind of "
-        "unhurried reading the Quran itself calls its readers to:\n\n"
+        "**Tadabbur** (تدبّر) means reflecting deeply on the Quran: reading it "
+        "slowly, pondering its meaning and taking its lessons to heart. It is the "
+        "kind of reading the Quran itself asks of us:\n\n"
         "> “Then do they not reflect upon (yatadabbaroon) the Quran, or are there "
-        f"locks upon [their] hearts?” — [[{reference}|Quran 47:24]]\n\n"
-        "This site is a structured companion for that reflection: every ayah of all "
-        "114 surahs, laid out with recitation audio, Arabic text, Urdu and English "
-        "translation, and cross-linked by theme — so you can move from a single verse "
-        "to everywhere else in the Quran that verse’s ideas appear.\n\n"
+        f"locks upon [their] hearts?” ([[{reference}|Quran 47:24]])\n\n"
+        "This site is a structured companion for that reflection. It covers all "
+        "114 surahs and gives every ayah its Arabic text, English and Urdu "
+        "translations, Urdu tafsir by Dr. Israr Ahmad and Maulana Wahiduddin "
+        "Khan, and recitation audio. "
+        "Each ayah is also tagged by theme, so from any single verse you can "
+        "follow its ideas to every other place they appear in the Quran.\n\n"
     )
 
 

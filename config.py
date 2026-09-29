@@ -71,6 +71,9 @@ ATTACHMENTS_DIR = "attachments"
 # "r2"    → your own bucket or CDN; requires AUDIO_R2_BASE_URL
 AUDIO_MODE = _get("AUDIO_MODE", "api")
 
+# Shown in every ayah's Recitation heading. Change it with the audio source.
+AUDIO_RECITER_NAME = _get("AUDIO_RECITER_NAME", "Mishary Rashid Alafasy")
+
 AUDIO_API_RECITER = _get("AUDIO_API_RECITER", "ar.alafasy")
 AUDIO_API_BASE_URL = _get("AUDIO_API_BASE_URL", "https://cdn.islamic.app/quran/audio")
 
@@ -93,7 +96,8 @@ CHAPTERS_EN_JSON = DATA_DIR / "chapters" / "en.json"
 CHAPTERS_UR_JSON = DATA_DIR / "chapters" / "ur.json"
 ASMA_JSON = DATA_DIR / "asma_ul_husna.json"
 PERSONALITIES_JSON = DATA_DIR / "quran_personalities.json"
-TAFSIR_DIR = DATA_DIR / "ur-tazkirul-quran"
+BAYAN_DIR = DATA_DIR / "ur-bayan-ul-quran"          # Dr. Israr Ahmad
+TAZKIRUL_DIR = DATA_DIR / "ur-tazkirul-quran"       # Maulana Wahiduddin Khan
 
 
 # ── Assets copied into the vault ─────────────────────────────────────────────

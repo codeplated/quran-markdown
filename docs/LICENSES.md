@@ -75,7 +75,7 @@ requires an attribution notice and prohibits modifying the text.
 | File | Translation | Recorded source |
 |---|---|---|
 | `en.json` | Sahih International | none in the repo |
-| `ur.json` | Fateh Muhammad Jalandhry | none in the repo |
+| `ur.json` | Syed Abul A'la Maududi (Tafheem ul Quran); earlier notes said Jalandhry, but the text matches Maududi's (checked on 2026-09-29 against quran.com translation 97) | none in the repo |
 
 Both are modern works. Sahih International in particular is widely mirrored
 but is **not** public domain, and its publisher's terms are usually
@@ -88,16 +88,37 @@ that is asked.
 
 ---
 
-## 4. Urdu tafsir — `data/ur-tazkirul-quran/`
+## 4. Urdu tafsir — `data/ur-bayan-ul-quran/`
 
-6,350 files. Tazkirul Quran is the tafsir of Maulana Wahiduddin Khan,
-a 20th-century work under copyright. Notes are generated with the heading
-"Tafsir — Bayan ul Quran", which names a *different* work
-(Dr. Israr Ahmed / Maulana Ashraf Ali Thanvi, depending on the edition).
+Bayan ul Quran by Dr. Israr Ahmad, one JSON file per ayah (6,236). Downloaded
+on 2026-09-29 from the quran.com API, tafsir id 159
+(`https://api.quran.com/api/v4/tafsirs/159/by_chapter/{surah}`). The HTML was
+reduced to plain paragraphs, with `_` escaped and stray backticks dropped for
+Markdown.
 
-**Needed from you:** two things — permission or a licence for the tafsir text,
-and a decision on which work the heading should name, since it currently
-contradicts the folder.
+Dr. Israr Ahmad often explains several ayaat in one passage, which quran.com
+stores on the first ayah with empty entries after it. `covers` records the
+passage as `[first, last]`, so the notes can say how far a passage reaches
+and point the other ayaat back to it. quran.com also chains a surah's opening
+ayaat onto the previous surah's last passage; those get `covers: null`
+instead, since that passage is about a different ayah.
+
+This is a work under copyright (Markazi Anjuman Khuddam-ul-Quran, Lahore).
+
+**Needed from you:** permission or a licence to republish it.
+
+---
+
+## 4b. Urdu tafsir — `data/ur-tazkirul-quran/`
+
+Tazkirul Quran by Maulana Wahiduddin Khan, one JSON file per ayah, shown
+below Bayan ul Quran. It was once published under the heading "Bayan ul
+Quran" by mistake. The source repeats a passage in full on every ayah it
+covers; `data.load_tazkirul` treats a run of identical ayaat as one passage.
+
+This is a work under copyright (CPS International / Goodword Books).
+
+**Needed from you:** permission or a licence to republish it.
 
 ---
 
@@ -118,7 +139,7 @@ answered later without guessing.
 | 1 | Recitation audio | Get terms in writing, or re-source | Only if you self-host audio |
 | 2 | Quran text | Identify the edition, add attribution | Low risk |
 | 3 | Translations | Identify source, add attribution | **Yes** — attribution is expected |
-| 4 | Tafsir | Get permission; fix the mismatched heading | **Yes** |
+| 4, 4b | Both tafsirs | Get permission for each | **Yes** |
 | 5 | Thumbnails | Record the model | Low risk |
 
 When each is settled, replace the "needed from you" line with the answer and

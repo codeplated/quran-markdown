@@ -115,7 +115,7 @@ class PersonalSectionSurvival(unittest.TestCase):
         surah = data.SURAHS[2]
         generated = ayah_notes.build(
             surah, 255,
-            {"arabic": "a", "urdu": "u", "english": "e", "tafsir": "t"},
+            {"arabic": "a", "urdu": "u", "english": "e", "tafsir": "t", "tazkirul": "z"},
         )
         self.assertIn("MY OWN WORDS",
                       self._rebuild_keeps("ayah.md", generated, notes.AYAH_PERSONAL))
@@ -171,6 +171,54 @@ class FrontmatterIsParseableYaml(unittest.TestCase):
 
     def test_quote_escapes_its_own_delimiters(self):
         self.assertEqual(notes.quote('a "b" c'), '"a \\"b\\" c"')
+
+
+class AyahNavButtons(unittest.TestCase):
+    """The site styles the buttons by position: Next, then Prev, both always there."""
+
+    def _nav(self, surah, ayah):
+        body = ayah_notes.build(data.SURAHS[surah], ayah, {
+            "arabic": "a", "urdu": "u", "english": "e", "tafsir": "t", "tazkirul": "z"})
+        return body.split("</audio>\n", 1)[1].split("\n", 1)[0]
+
+    def test_middle_ayah_has_both(self):
+        self.assertEqual(self._nav(11, 7), "[[11_8|Next 11:8]] [[11_6|Prev 11:6]]")
+
+    def test_edges_keep_an_empty_slot(self):
+        self.assertEqual(self._nav(1, 1), "[[1_2|Next 1:2]] <span></span>")
+        self.assertEqual(self._nav(1, 7), "<span></span> [[1_6|Prev 1:6]]")
+
+
+class TafsirPassages(unittest.TestCase):
+    """Bayan ul Quran explains some ayaat together; each ayah note must say where."""
+
+    def test_passage_start_carries_text_and_its_reach(self):
+        tafsir = data.load_tafsir(1, 6)
+        self.assertTrue(tafsir.startswith("_This commentary covers ayaat 6 and 7._"))
+        self.assertIn("اِہْدِنَا", tafsir)
+
+    def test_rest_of_passage_links_back_to_its_start(self):
+        self.assertEqual(data.load_tafsir(1, 7),
+                         "_The commentary on this ayah is given with [[1_6|ayah 1:6]]._")
+
+    def test_no_link_across_surahs(self):
+        # quran.com chains 13:1 onto 12:111's commentary, which is about 12:111.
+        self.assertIn("no separate commentary", data.load_tafsir(13, 1))
+
+    def test_single_ayah_is_just_text(self):
+        self.assertFalse(data.load_tafsir(2, 255).startswith("_"))
+
+    def test_tazkirul_repeats_become_one_passage(self):
+        # The source repeats 2:1-5's passage on all five ayaat.
+        self.assertTrue(data.load_tazkirul(2, 1).startswith(
+            "_This commentary covers ayaat 1 to 5._"))
+        for ayah in range(2, 6):
+            self.assertEqual(data.load_tazkirul(2, ayah),
+                             "_The commentary on this ayah is given with [[2_1|ayah 2:1]]._")
+        self.assertFalse(data.load_tazkirul(2, 6).startswith("_The commentary"))
+
+    def test_tazkirul_paragraphs_are_separate(self):
+        self.assertNotRegex(data.load_tazkirul(2, 1), r"[^\n]\n[^\n]")
 
 
 class SurahIndexNote(unittest.TestCase):
@@ -267,7 +315,7 @@ class NoEmojiInGeneratedNotes(unittest.TestCase):
     def test_ayah_note(self):
         self._assert_clean(ayah_notes.build(
             data.SURAHS[2], 255,
-            {"arabic": "a", "urdu": "u", "english": "e", "tafsir": "t"},
+            {"arabic": "a", "urdu": "u", "english": "e", "tafsir": "t", "tazkirul": "z"},
         ), "ayah note")
 
     def test_every_asma_note(self):
@@ -341,7 +389,7 @@ class Sentinels(unittest.TestCase):
     def test_ayah(self):
         self._assert_well_formed(ayah_notes.build(
             data.SURAHS[1], 1,
-            {"arabic": "a", "urdu": "u", "english": "e", "tafsir": "t"},
+            {"arabic": "a", "urdu": "u", "english": "e", "tafsir": "t", "tazkirul": "z"},
         ))
 
     def test_every_asma_note(self):

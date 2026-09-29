@@ -6,6 +6,7 @@ there is a single place to look when you want to know what data exists.
 """
 
 import json
+from functools import cache
 from pathlib import Path
 
 import config
@@ -88,14 +89,76 @@ def wikilink(surah: int, ayah: int) -> str:
     return f"[[{surah}_{ayah}]]"
 
 
+# Both tafsirs explain several ayaat in one passage. The passage goes on the
+# first ayah, which says how far it reaches; the rest point back to it rather
+# than repeat it, which on a phone would be the same long text page after page.
+TAFSIR_MISSING = "_Tafsir not available for this ayah._"
+
+
+def _passage(surah: int, ayah: int, text: str, first: int, last: int) -> str:
+    """One ayah's share of a passage covering ayaat first..last."""
+    if first != ayah:
+        link = f"[[{SURAHS[surah].note_name(first)}|ayah {surah}:{first}]]"
+        return f"_The commentary on this ayah is given with {link}._"
+    if last == first:
+        return text
+    joiner = "and" if last == first + 1 else "to"
+    return f"_This commentary covers ayaat {first} {joiner} {last}._\n\n{text}"
+
+
 def load_tafsir(surah: int, ayah: int) -> str:
     """
-    Urdu tafsir for one ayah. Missing or unreadable files degrade to a notice
-    rather than aborting a 6,236-note run partway through.
+    Bayan ul Quran (Dr. Israr Ahmad) for one ayah. Missing or unreadable files
+    degrade to a notice rather than aborting a 6,236-note run partway through.
+
+    Each file's `covers` names the first and last ayah of its passage, or is
+    null for an ayah with no commentary of its own (see docs/LICENSES.md §4).
     """
-    path = config.TAFSIR_DIR / str(surah) / f"{ayah}.json"
+    path = config.BAYAN_DIR / str(surah) / f"{ayah}.json"
     try:
         with open(path, encoding="utf-8") as handle:
-            return json.load(handle).get("text", "")
+            entry = json.load(handle)
     except (FileNotFoundError, json.JSONDecodeError, OSError):
-        return "_Tafsir not available for this ayah._"
+        return TAFSIR_MISSING
+
+    covers = entry.get("covers")
+    if not covers:
+        return "_Bayan ul Quran has no separate commentary on this ayah._"
+    return _passage(surah, ayah, entry.get("text", ""), *covers)
+
+
+@cache
+def _tazkirul_surah(surah: int) -> list:
+    """Every ayah's Tazkirul Quran text for one surah, None where unreadable."""
+    texts = []
+    for ayah in range(1, SURAHS[surah].total_ayaat + 1):
+        try:
+            with open(config.TAZKIRUL_DIR / str(surah) / f"{ayah}.json",
+                      encoding="utf-8") as handle:
+                texts.append(json.load(handle).get("text", ""))
+        except (FileNotFoundError, json.JSONDecodeError, OSError):
+            texts.append(None)
+    return texts
+
+
+def load_tazkirul(surah: int, ayah: int) -> str:
+    """
+    Tazkirul Quran (Maulana Wahiduddin Khan) for one ayah.
+
+    The source repeats a passage in full on every ayah it covers, so a
+    passage is a run of consecutive ayaat with identical text. Paragraphs are
+    split by single newlines, which Markdown would run together.
+    """
+    texts = _tazkirul_surah(surah)
+    text = texts[ayah - 1]
+    if not text:
+        return TAFSIR_MISSING
+
+    first = last = ayah
+    while first > 1 and texts[first - 2] == text:
+        first -= 1
+    while last < len(texts) and texts[last] == text:
+        last += 1
+
+    paragraphs = "\n\n".join(line.strip() for line in text.split("\n") if line.strip())
+    return _passage(surah, ayah, paragraphs, first, last)

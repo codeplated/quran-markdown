@@ -34,6 +34,18 @@ def build(surah: data.Surah, ayah: int, texts: dict) -> str:
         if ayah < surah.total_ayaat else "_(End of Surah)_"
     )
 
+    # Buttons under the recitation: Next first, then Prev. The site styles
+    # them by position, so an ayah with no neighbour on one side keeps an
+    # empty slot there and the other button stays on its own side.
+    next_button = (
+        f"[[{surah.note_name(ayah + 1)}|Next {surah.number}:{ayah + 1}]]"
+        if ayah < surah.total_ayaat else "<span></span>"
+    )
+    prev_button = (
+        f"[[{surah.note_name(ayah - 1)}|Prev {surah.number}:{ayah - 1}]]"
+        if ayah > 1 else "<span></span>"
+    )
+
     tags = connections.get_ayah_themes(surah.number, ayah)
 
     head = notes.frontmatter({
@@ -46,10 +58,10 @@ def build(surah: data.Surah, ayah: int, texts: dict) -> str:
         "image": f'"{thumbnail_link(surah.number)}"',
     })
 
-    body = f"""## Recitation
+    body = f"""## Recitation ({config.AUDIO_RECITER_NAME})
 
 {audio.audio_embed(surah.number, ayah)}
-**Next:** {following}
+{next_button} {prev_button}
 
 ---
 
@@ -59,21 +71,27 @@ def build(surah: data.Surah, ayah: int, texts: dict) -> str:
 
 ---
 
-## Urdu
+## Urdu (Syed Abul A'la Maududi)
 
 {texts['urdu']}
 
 ---
 
-## English
+## English (Sahih International)
 
 {texts['english']}
 
 ---
 
-## Tafsir — Bayan ul Quran
+## Tafsir — Bayan ul Quran (Dr. Israr Ahmad)
 
 {texts['tafsir']}
+
+---
+
+## Tafsir — Tazkirul Quran (Maulana Wahiduddin Khan)
+
+{texts['tazkirul']}
 
 ---
 
@@ -111,6 +129,7 @@ def generate() -> tuple:
                 "urdu": data.urdu[surah_number_str][index]["text"],
                 "english": data.english[surah_number_str][index]["text"],
                 "tafsir": data.load_tafsir(surah.number, ayah),
+                "tazkirul": data.load_tazkirul(surah.number, ayah),
             }
 
             notes.rename_note(
