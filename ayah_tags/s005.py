@@ -42,7 +42,7 @@ TAGS = {
     33: ["criminal_law", "environment", "warnings"],
     34: ["criminal_law", "tawbah"],
     # 35–40 · Seeking the means to Allah; theft
-    35: ["o_believers", "taqwa", "conflict", "commands"],
+    35: ["o_believers", "taqwa", "conflict", "commands", "jihad"],
     36: ["kufr", "akhirah", "warnings"],
     37: ["jahannam", "kufr"],
     38: ["criminal_law", "commands"],
@@ -63,7 +63,7 @@ TAGS = {
     51: ["o_believers", "wala_bara", "ahl_al_kitab", "prohibitions"],
     52: ["nifaq", "wala_bara", "anxiety_fear"],
     53: ["nifaq", "iman"],
-    54: ["o_believers", "love_of_allah", "iman", "kibr", "conflict"],
+    54: ["o_believers", "love_of_allah", "iman", "kibr", "conflict", "jihad"],
     55: ["wala_bara", "salah", "zakat"],
     56: ["wala_bara", "glad_tidings"],
     57: ["o_believers", "wala_bara", "ahl_al_kitab", "speech_ethics"],

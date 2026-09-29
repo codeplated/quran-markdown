@@ -108,6 +108,7 @@ THEMES = {
 
     # ── Character (Akhlaq) ────────────────────────────────────────────────────
     "sabr":                ("Character",  "Sabr",                     "صبر",                    "Patience & steadfastness — in hardship, in obedience & against sin"),
+    "jihad":               ("Character",  "Jihad & Striving",         "جہاد و جدوجہد",          "Exertion in Allah's way — with the self, wealth, tongue & the Quran"),
     "shukr":               ("Character",  "Shukr",                    "شکر",                    "Gratitude for Allah's blessings — and the ingratitude of man"),
     "tawakkul":            ("Character",  "Tawakkul",                 "توکل",                   "Reliance & trust in Allah"),
     "ikhlas":              ("Character",  "Ikhlas",                   "اخلاص",                  "Sincerity of intention & avoiding showing off"),
@@ -164,7 +165,7 @@ THEMES = {
     "shura":               ("Society",    "Shura",                    "شوریٰ",                  "Consultation & collective decision-making"),
     "criminal_law":        ("Society",    "Crime & Punishment",       "حدود و قصاص",            "Qisas, hudud & blood money"),
     "oppression":          ("Society",    "Oppression",               "ظلم",                    "Dhulm — oppressors, the oppressed & standing against injustice"),
-    "conflict":            ("Society",    "Jihad, War & Peace",       "جہاد، جنگ و صلح",        "Fighting in Allah's way, its ethics, treaties & peacemaking"),
+    "conflict":            ("Society",    "War, Ethics & Peace",      "جنگ و صلح",              "Fighting in Allah's way, its ethics, treaties & peacemaking"),
     "social_justice":      ("Society",    "Social Justice",           "سماجی انصاف",            "Rights of the poor & needy, fair distribution & freeing slaves"),
     "environment":         ("Society",    "Earth & Corruption",       "زمین و فساد",            "Stewardship of the earth & spreading corruption (fasad) in it"),
 
@@ -362,6 +363,7 @@ RELATED_TOPICS = {
     "quran_recitation":   ["revelation", "knowledge", "hidayah", "dhikr"],
     # Character
     "sabr":               ["trial_test", "tawakkul", "grief_loss", "jannah"],
+    "jihad":              ["conflict", "sabr", "tazkiyah", "oppression"],
     "shukr":              ["rizq", "sabr", "dunya", "trial_test"],
     "tawakkul":           ["qadr", "rizq", "sabr", "anxiety_fear"],
     "ikhlas":             ["tawheed", "taqwa", "nifaq", "zakat"],
@@ -414,7 +416,7 @@ RELATED_TOPICS = {
     "shura":              ["leadership", "community"],
     "criminal_law":       ["adl", "commands", "prohibitions"],
     "oppression":         ["adl", "story_musa", "sabr", "history_lessons"],
-    "conflict":           ["oppression", "battle_badr", "sabr", "hijrah"],
+    "conflict":           ["oppression", "battle_badr", "jihad", "hijrah"],
     "social_justice":     ["zakat", "orphans", "adl", "riba"],
     "environment":        ["nature_signs", "animals", "oppression"],
     # Signs

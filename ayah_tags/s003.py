@@ -158,7 +158,7 @@ TAGS = {
     139: ["battle_uhud", "sabr", "grief_loss", "iman", "tawakkul"],
     140: ["battle_uhud", "trial_test", "conflict"],
     141: ["battle_uhud", "trial_test", "tazkiyah"],
-    142: ["battle_uhud", "jannah", "trial_test", "sabr"],
+    142: ["battle_uhud", "jannah", "trial_test", "sabr", "jihad"],
     143: ["battle_uhud", "conflict", "death_reminder"],
     144: ["battle_uhud", "story_muhammad", "prophethood", "death_reminder", "shukr"],
     145: ["death_reminder", "qadr", "dunya", "akhirah"],

@@ -13,7 +13,7 @@ TAGS = {
     6: ["o_believers", "family", "parenting", "jahannam", "angels", "commands"],
     7: ["kufr", "akhirah", "adl"],
     8: ["o_believers", "tawbah", "jannah", "dua", "commands"],
-    9: ["story_muhammad", "conflict", "nifaq", "jahannam"],
+    9: ["story_muhammad", "conflict", "nifaq", "jahannam", "jihad"],
     # 10–12 · Four women as examples: the wives of Nuh and Lut, Asiya and Maryam
     10: ["story_nuh", "story_lut", "women", "parables", "amanah", "family"],
     11: ["story_musa", "women", "parables", "dua", "jannah", "oppression"],

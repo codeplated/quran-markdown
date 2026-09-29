@@ -82,8 +82,8 @@ TAGS = {
     70: ["battle_badr", "story_muhammad", "tawbah", "hope_raja"],
     71: ["amanah", "conflict"],
     # 72–75 · Muhajirun, Ansar and the bonds of alliance
-    72: ["hijrah", "sahabah", "wala_bara", "conflict", "amanah"],
+    72: ["hijrah", "sahabah", "wala_bara", "conflict", "amanah", "jihad"],
     73: ["wala_bara", "kufr", "environment"],
-    74: ["hijrah", "sahabah", "iman", "glad_tidings"],
-    75: ["hijrah", "inheritance", "family", "sahabah"],
+    74: ["hijrah", "sahabah", "iman", "glad_tidings", "jihad"],
+    75: ["hijrah", "inheritance", "family", "sahabah", "jihad"],
 }

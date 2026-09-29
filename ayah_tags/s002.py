@@ -243,7 +243,7 @@ TAGS = {
     215: ["they_ask_you", "zakat", "parents", "family", "orphans", "social_justice"],
     216: ["conflict", "trial_test", "tawakkul", "qadr"],
     217: ["they_ask_you", "conflict", "kaaba", "oppression", "kufr", "warnings"],
-    218: ["hijrah", "iman", "conflict", "hope_raja"],
+    218: ["hijrah", "iman", "conflict", "hope_raja", "jihad"],
     # 219–221 · Wine and gambling, orphans, marrying polytheists
     219: ["they_ask_you", "food_halal", "wealth", "zakat", "prohibitions", "knowledge"],
     220: ["they_ask_you", "orphans", "ihsan"],

@@ -58,7 +58,7 @@ TAGS = {
     49: ["nature_signs", "resurrection", "animals"],
     50: ["nature_signs", "kufr"],
     51: ["prophethood"],
-    52: ["dawah", "revelation", "conflict"],
+    52: ["dawah", "revelation", "conflict", "jihad"],
     53: ["nature_signs"],
     54: ["human_creation", "family", "marriage"],
     55: ["shirk", "kufr", "shaytan"],

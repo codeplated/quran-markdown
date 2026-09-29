@@ -3,9 +3,17 @@ Files copied into the vault rather than generated: surah thumbnails, and the
 hand-made notes and canvases under vault_files/.
 """
 
+import json
+import re
 import shutil
 
 import config
+from tadabbur import data
+
+# An ayah note's vault path in any layout, old or current:
+# "2 - The Cow البقرة/2_255: The Cow البقرة.md", "2 The Cow/2_255.md",
+# "2 - The Cow/2_255.md". A current path maps to itself.
+OLD_AYAH_PATH = re.compile(r"(\d+) [^/]+/(\d+)_(\d+)(?:: [^/]+)?\.md")
 
 
 def copy_thumbnails() -> int:
@@ -57,6 +65,8 @@ def copy_vault_files() -> int:
 
         target = config.VAULT_PATH / item.relative_to(source)
         if target.exists():
+            if target.suffix == ".canvas":
+                relink_canvas(target)
             continue
 
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -64,3 +74,29 @@ def copy_vault_files() -> int:
         copied += 1
 
     return copied
+
+
+def relink_canvas(path) -> bool:
+    """
+    Points a canvas's cards at the ayah notes' current paths.
+
+    A canvas stores each card's note as a vault path, and the notes were
+    renamed from outside Obsidian, so nothing updated those paths and the
+    cards went blank. Only paths in the old ayah layout are rewritten, in
+    place, so the rest of the file — edited in Obsidian or not — is kept
+    byte for byte. Returns True if the file changed.
+    """
+    def current(value: re.Match) -> str:
+        old = OLD_AYAH_PATH.fullmatch(value[0])
+        if not old or old[1] != old[2] or int(old[2]) not in data.SURAHS:
+            return value[0]
+        surah = data.SURAHS[int(old[2])]
+        return f"{surah.folder_name}/{surah.note_name(int(old[3]))}.md"
+
+    text = path.read_text(encoding="utf-8")
+    updated = re.sub(r'(?<="file":")[^"]+(?=")', current, text)
+
+    if updated == text:
+        return False
+    path.write_text(updated, encoding="utf-8")
+    return True

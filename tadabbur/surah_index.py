@@ -89,6 +89,7 @@ def build(surah: data.Surah) -> str:
     transliteration = data.chapters_en[surah.number - 1]["transliteration"]
 
     head = notes.frontmatter({
+        "title": notes.quote(f"{surah.folder_name} {surah.arabic}"),
         "surah": f"{surah.number} / {data.SURAH_COUNT}",
         "surah_name": notes.quote(f"{surah.english} / {surah.arabic} / {surah.urdu}"),
         "transliteration": notes.quote(transliteration),

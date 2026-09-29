@@ -27,7 +27,7 @@ tadabbur-generator/
 │   ├── ayah_notes.py       ← the 6,236 ayah notes
 │   ├── asma_notes.py       ← the 99 Names of Allah
 │   ├── personalities.py    ← the 79 figures + their indexes
-│   ├── explore.py          ← front page, Explore hub + Quran.base view
+│   ├── explore.py          ← front page, Themes A–Z, Explore hub, Quran.base
 │   └── assets.py           ← thumbnails & vault_files copying
 ├── quranConnections.py     ← tag vocabulary (THEMES), retired names, related topics
 ├── ayah_tags/              ← ayah→theme map, one file per surah (s001.py … s114.py)
@@ -112,7 +112,7 @@ python main.py --only ayaat         # one part: ayaat|surahs|asma|personalities|
 python main.py --vault ../Test      # write elsewhere without touching .env
 python main.py --quiet              # summary only
 
-python -m unittest discover -s tests -t .    # 18 tests, no deps
+python -m unittest discover -s tests -t .    # 64 tests, no deps
 python tag_audit.py                          # validate every tag
 ```
 
@@ -132,9 +132,18 @@ folder a reader lands on therefore writes its own:
 | `0 - Explore/Personalities/` | `personalities._write_master_index` | the 79 figures by type |
 | each surah folder | `surah_index.generate` | the surah's identity, themes, and every ayah in order |
 
+`0 - Explore/Themes.md` is not a folder index but belongs with them: it is the
+front page's 139 themes in alphabetical order, written by
+`explore.write_themes_index`. It exists as a note rather than a section of the
+front page because the site's left sidebar is a file tree — only a real file
+puts Themes under Explore — and because the site's own `/tags` page lists bare
+tag names with no Urdu, no counts and no descriptions. The front page and the
+A–Z note link to each other; change one line and change the other.
+
 Links between these notes must use the **full vault path** —
-`[[2 - The Cow البقرة/index|…]]`. 114 notes are named `index`, so a bare
-`[[index]]` is ambiguous and the site resolves it to the front page.
+`[[2 - The Cow/index|…]]`. 114 notes are named `index`, so a bare
+`[[index]]` is ambiguous and the site resolves it to the front page. The A–Z
+note's link back to the front page is the one place that is what's wanted.
 
 The surah index takes a personal section (`notes.SURAH_PERSONAL`); the other
 indexes are pure navigation, rebuilt wholesale with `write_plain`.
@@ -214,8 +223,9 @@ Path and type are fields, not tags.
 ## Note Filename Formats
 
 ```
-{surah}_{ayah}: {english_name} {arabic_name}.md      → 2_255: The Cow البقرة.md
-[[2_255: The Cow البقرة]]                             → the wikilink form
+{surah} - {english_name}/                            → 2 - The Cow/ (surah folder)
+{surah}_{ayah}.md                                    → 2_255.md
+[[2_255]]                                            → the wikilink form
 
 {number} - {transliteration} {arabic}.md             → 10 - Al-Jabbar ٱلْجَبَّار.md
 {name_english} — {name_arabic}.md                    → Abu Bakr As-Siddiq — أَبُو بَكْر.md
@@ -223,7 +233,15 @@ Path and type are fields, not tags.
 
 Built by `data.Surah.note_name()`, `asma_notes.note_name()` and
 `personalities.note_name()`. A note's filename is its wikilink target and its
-page title on the site, so the published site's links depend on all three.
+URL on the site, so the published site's links depend on all three. Ayah notes
+take their page title from the `title` frontmatter
+(`data.Surah.display_name()`, `2_255: The Cow البقرة`) instead.
+
+Anything that finds notes by path has to follow a rename too: canvases store
+vault paths, which `assets.relink_canvas` moves from the old layout.
+`Quran.base` links each surah's card to its `index` note, picked by
+`file.name == "index"` plus the `surah_name` property; the card heading is the
+index note's `title` (`2 - The Cow البقرة`).
 
 Renaming a note type means moving the existing files, not writing new ones
 beside them — `notes.rename_note` does that, so the reader's personal section

@@ -108,7 +108,7 @@ TAGS = {
     92: ["criminal_law", "social_justice", "sawm", "commands"],
     93: ["criminal_law", "jahannam", "warnings"],
     94: ["o_believers", "conflict", "iman", "dunya"],
-    95: ["conflict", "wealth", "glad_tidings"],
+    95: ["conflict", "wealth", "glad_tidings", "jihad"],
     96: ["rahmah", "glad_tidings"],
     # 97–100 · Emigration for the sake of Allah
     97: ["hijrah", "angels", "death_reminder", "oppression", "jahannam"],

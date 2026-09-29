@@ -49,16 +49,31 @@ class Surah:
 
     @property
     def folder_name(self) -> str:
-        """Vault folder for this surah, e.g. '2 - The Cow البقرة'."""
-        return f"{self.number} - {self.english} {self.arabic}"
+        """
+        Vault folder for this surah, e.g. '2 - The Cow'.
+
+        Same shape as '0 - Explore', so the file tree reads as one list. No
+        Arabic: this becomes a URL path segment on the published site, and
+        Arabic slugifies to an unreadable percent-encoded block. The Arabic
+        name still appears in the surah's own index note and every ayah note.
+        """
+        return f"{self.number} - {self.english}"
 
     def note_name(self, ayah: int) -> str:
         """
-        Note name for one ayah, e.g. '2_255: The Cow البقرة'.
+        Note name for one ayah, e.g. '2_255'.
 
-        This doubles as the wikilink target, so the format is load-bearing:
-        the published site's links break if it changes.
+        This doubles as the wikilink target and the URL path segment, so the
+        format is load-bearing: the published site's links break if it
+        changes. Kept to bare numbers so the URL doesn't repeat the surah
+        name already in the folder segment, or carry an unreadable
+        percent-encoded Arabic block. `display_name` below carries the full
+        human-readable form instead, for the page's `title` frontmatter.
         """
+        return f"{self.number}_{ayah}"
+
+    def display_name(self, ayah: int) -> str:
+        """Human-readable ayah heading, e.g. '2_255: The Cow البقرة'."""
         return f"{self.number}_{ayah}: {self.english} {self.arabic}"
 
 

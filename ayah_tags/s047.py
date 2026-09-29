@@ -35,7 +35,7 @@ TAGS = {
     28: ["nifaq", "kufr", "love_of_allah"],
     29: ["nifaq", "tazkiyah"],
     30: ["nifaq", "speech_ethics", "knowledge"],
-    31: ["trial_test", "conflict", "sabr"],
+    31: ["trial_test", "conflict", "sabr", "jihad"],
     # 32–38 · Do not invalidate your deeds; spending in the cause of Allah
     32: ["kufr", "dawah", "story_muhammad"],
     33: ["o_believers", "commands", "story_muhammad", "ikhlas"],

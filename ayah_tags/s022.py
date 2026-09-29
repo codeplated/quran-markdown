@@ -87,5 +87,5 @@ TAGS = {
     76: ["knowledge", "akhirah"],
     # 77–78 · Bow, prostrate and strive; the religion of Ibrahim
     77: ["o_believers", "sajdah_tilawah", "salah", "ihsan", "commands"],
-    78: ["conflict", "tawakkul", "story_ibrahim", "salah", "zakat", "commands"],
+    78: ["conflict", "tawakkul", "story_ibrahim", "salah", "zakat", "commands", "jihad"],
 }

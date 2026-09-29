@@ -37,6 +37,7 @@ def build(surah: data.Surah, ayah: int, texts: dict) -> str:
     tags = connections.get_ayah_themes(surah.number, ayah)
 
     head = notes.frontmatter({
+        "title": notes.quote(surah.display_name(ayah)),
         "surah": f"{surah.number} / {data.SURAH_COUNT}",
         "surah_name": f"{surah.english} / {surah.arabic} / {surah.urdu}",
         "ayah": f"{ayah} / {surah.total_ayaat}",
@@ -92,6 +93,13 @@ def generate() -> tuple:
 
     for surah_number_str, ayaat in data.quran.items():
         surah = data.SURAHS[int(surah_number_str)]
+
+        # Folders used to be named '2 - The Cow البقرة', then '2 The Cow'.
+        # Move anything still at an old path first, so a reader's personal
+        # sections survive the rename instead of being stranded.
+        for old_name in (f"{surah.number} - {surah.english} {surah.arabic}",
+                         f"{surah.number} {surah.english}"):
+            notes.rename_folder(config.VAULT_PATH, old_name, surah.folder_name)
         folder = config.VAULT_PATH / surah.folder_name
 
         for entry in ayaat:
@@ -104,6 +112,12 @@ def generate() -> tuple:
                 "english": data.english[surah_number_str][index]["text"],
                 "tafsir": data.load_tafsir(surah.number, ayah),
             }
+
+            notes.rename_note(
+                folder,
+                f"{surah.number}_{ayah}: {surah.english} {surah.arabic}.md",
+                f"{surah.note_name(ayah)}.md",
+            )
 
             is_new = notes.write_note(
                 folder,

@@ -37,6 +37,7 @@ def build(parts: set, quiet: bool) -> None:
 
     if "index" in parts:
         explore.write_index()
+        explore.write_themes_index()
         explore.write_explore_index()
         explore.write_quran_base()
         results.append(("Index & base view", None, None))

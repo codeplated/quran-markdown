@@ -15,7 +15,7 @@ TAGS = {
     9: ["story_muhammad", "hidayah", "shirk"],
     # 10–14 · The transaction that saves; be supporters of Allah
     10: ["o_believers", "conflict", "trade", "glad_tidings"],
-    11: ["iman", "conflict", "wealth", "glad_tidings"],
+    11: ["iman", "conflict", "wealth", "glad_tidings", "jihad"],
     12: ["jannah", "tawbah", "glad_tidings"],
     13: ["glad_tidings", "conflict"],
     14: ["o_believers", "story_isa", "dawah", "conflict", "iman"],

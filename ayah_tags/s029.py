@@ -9,7 +9,7 @@ TAGS = {
     3: ["trial_test", "sidq", "history_lessons"],
     4: ["warnings"],
     5: ["akhirah", "hope_raja", "death_reminder"],
-    6: ["tazkiyah"],
+    6: ["tazkiyah", "jihad"],
     7: ["iman", "glad_tidings", "rahmah"],
     8: ["parents", "shirk", "commands", "prohibitions"],
     9: ["iman", "jannah"],
@@ -75,5 +75,5 @@ TAGS = {
     66: ["shukr", "kufr"],
     67: ["kaaba", "shukr", "anxiety_fear"],
     68: ["sidq", "kufr", "jahannam"],
-    69: ["tazkiyah", "hidayah", "ihsan"],
+    69: ["tazkiyah", "hidayah", "ihsan", "jihad"],
 }

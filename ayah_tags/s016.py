@@ -121,7 +121,7 @@ TAGS = {
     107: ["dunya", "kufr", "hidayah"],
     108: ["kufr", "tazkiyah", "dunya"],
     109: ["akhirah"],
-    110: ["hijrah", "sabr", "oppression", "conflict", "rahmah"],
+    110: ["hijrah", "sabr", "oppression", "conflict", "rahmah", "jihad"],
     111: ["akhirah", "adl"],
     # 112–119 · The ungrateful town; lawful and unlawful food
     112: ["parables", "shukr", "history_lessons", "rizq"],

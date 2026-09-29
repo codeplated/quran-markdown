@@ -20,7 +20,7 @@ TAGS = {
     13: ["o_mankind", "community", "human_creation", "taqwa", "kibr"],
     # 14–18 · Islam and iman; faith is a favour from Allah
     14: ["iman", "sidq", "tazkiyah"],
-    15: ["iman", "conflict", "sidq", "wealth"],
+    15: ["iman", "conflict", "sidq", "wealth", "jihad"],
     16: ["knowledge", "iman"],
     17: ["iman", "hidayah", "kibr", "shukr"],
     18: ["knowledge", "taqwa"],

@@ -4,7 +4,7 @@ STATUS = "deep"
 
 TAGS = {
     # 1–9 · Allies and enemies; the example of Ibrahim; justice to those who do not fight you
-    1: ["o_believers", "wala_bara", "hijrah", "conflict", "prohibitions"],
+    1: ["o_believers", "wala_bara", "hijrah", "conflict", "prohibitions", "jihad"],
     2: ["wala_bara", "kufr", "speech_ethics"],
     3: ["akhirah", "family", "wala_bara"],
     4: ["story_ibrahim", "wala_bara", "dua", "tawakkul", "shirk"],

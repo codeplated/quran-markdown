@@ -138,6 +138,23 @@ def rename_note(folder: Path | str, old_filename: str, new_filename: str) -> boo
     return True
 
 
+def rename_folder(parent: Path | str, old_name: str, new_name: str) -> bool:
+    """
+    Moves a folder that an earlier version of the generator named
+    differently, the folder equivalent of `rename_note`. Every note inside
+    keeps its personal section, since the whole folder just moves. Returns
+    True if a folder was moved.
+    """
+    parent = Path(parent)
+    old, new = parent / old_name, parent / new_name
+
+    if old_name == new_name or not old.exists() or new.exists():
+        return False
+
+    old.rename(new)
+    return True
+
+
 def write_plain(folder: Path | str, filename: str, content: str) -> None:
     """
     Writes a fully generated file with no personal section — index notes and
