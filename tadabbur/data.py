@@ -53,12 +53,24 @@ class Surah:
         """
         Vault folder for this surah, e.g. '2 - The Cow'.
 
-        Same shape as '0 - Explore', so the file tree reads as one list. No
-        Arabic: this becomes a URL path segment on the published site, and
+        No Arabic: this becomes a URL path segment on the published site, and
         Arabic slugifies to an unreadable percent-encoded block. The Arabic
         name still appears in the surah's own index note and every ayah note.
         """
         return f"{self.number} - {self.english}"
+
+    @property
+    def folder(self) -> str:
+        """Vault path of this surah's folder, e.g. 'The Quran/2 - The Cow'."""
+        return f"{config.QURAN_DIR}/{self.folder_name}"
+
+    @property
+    def index_path(self) -> str:
+        """
+        Wikilink target of this surah's page. 114 notes are called 'index',
+        so a bare [[index]] is ambiguous; the path is what makes it land.
+        """
+        return f"{self.folder}/index"
 
     def note_name(self, ayah: int) -> str:
         """

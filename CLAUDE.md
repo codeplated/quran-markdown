@@ -27,7 +27,8 @@ tadabbur-generator/
 │   ├── ayah_notes.py       ← the 6,236 ayah notes
 │   ├── asma_notes.py       ← the 99 Names of Allah
 │   ├── personalities.py    ← the 79 figures + their indexes
-│   ├── explore.py          ← front page, Themes A–Z, Explore hub, Quran.base
+│   ├── explore.py          ← home page (four cards), the Quran's page, the themes note
+│   ├── layout.py           ← moves an older vault into the section folders
 │   └── assets.py           ← thumbnails & vault_files copying
 ├── quranConnections.py     ← tag vocabulary (THEMES), retired names, related topics
 ├── ayah_tags/              ← ayah→theme map, one file per surah (s001.py … s114.py)
@@ -119,7 +120,13 @@ python tag_audit.py                          # validate every tag
 
 ---
 
-## Folder Index Notes
+## Vault Layout and Section Pages
+
+The vault has four sections: **The Quran, Personalities, Asma Ul Husna,
+Themes**. The home page offers them as four cards, in that order, and the
+site's left panel shows the same four as its parents, so the top-level folder
+names here are the site's navigation. The site orders them by slug in its
+`quartz.config.yaml`; rename a section and that list has to follow.
 
 A folder with no `index.md` gets whatever the site invents for it: a file list
 sorted as text (2_1, 2_10, 2_100 …) that says nothing about the folder. Every
@@ -127,24 +134,27 @@ folder a reader lands on therefore writes its own:
 
 | Folder | Written by | Holds |
 |---|---|---|
-| vault root | `explore.write_index` | the thematic index of every theme |
-| `0 - Explore/` | `explore.write_explore_index` | links to the Quran grid, Names, Personalities, themes |
-| `0 - Explore/Asma Ul Husna/` | `asma_notes._write_master_index` | the 99 Names by category |
-| `0 - Explore/Personalities/` | `personalities._write_master_index` | the 79 figures by type |
-| each surah folder | `surah_index.generate` | the surah's identity, themes, and every ayah in order |
+| vault root | `explore.write_index` | the home page: what Tadabbur is, then the four cards |
+| `The Quran/` | `explore.write_quran_index` | one card per surah, as a `base` block in the page |
+| `The Quran/2 - The Cow/` | `surah_index.generate` | the surah's identity, themes, and every ayah in order |
+| `Personalities/` | `personalities._write_master_index` | the 79 figures by type |
+| `Asma Ul Husna/` | `asma_notes._write_master_index` | the 99 Names by category |
 
-`0 - Explore/Themes.md` is not a folder index but belongs with them: it is the
-front page's 139 themes in alphabetical order, written by
-`explore.write_themes_index`. It exists as a note rather than a section of the
-front page because the site's left sidebar is a file tree — only a real file
-puts Themes under Explore — and because the site's own `/tags` page lists bare
-tag names with no Urdu, no counts and no descriptions. The front page and the
-A–Z note link to each other; change one line and change the other.
+`Themes.md`, at the top level, is the fourth section for now: every theme by
+category, the tables the home page used to hold, written by
+`explore.write_themes_index`.
 
-Links between these notes must use the **full vault path** —
-`[[2 - The Cow/index|…]]`. 114 notes are named `index`, so a bare
-`[[index]]` is ambiguous and the site resolves it to the front page. The A–Z
-note's link back to the front page is the one place that is what's wanted.
+Older vaults had the surah folders at the top level and Personalities and
+Asma Ul Husna under `0 - Explore`. `layout.migrate` moves them into place at
+the start of every run, before anything is written, whole folders at a time so
+personal sections travel with their notes. It also removes the listings the old
+layout needed (`0 - Explore/index.md`, `0 - Explore/Themes.md`) and a
+`Quran.base` nobody edited.
+
+Links between these notes must use the **full vault path**,
+`[[The Quran/2 - The Cow/index|…]]`, from `data.Surah.index_path`. 114 notes
+are named `index`, so a bare `[[index]]` is ambiguous and the site resolves it
+to the front page.
 
 The surah index takes a personal section (`notes.SURAH_PERSONAL`); the other
 indexes are pure navigation, rebuilt wholesale with `write_plain`.
@@ -224,7 +234,7 @@ Path and type are fields, not tags.
 ## Note Filename Formats
 
 ```
-{surah} - {english_name}/                            → 2 - The Cow/ (surah folder)
+The Quran/{surah} - {english_name}/                  → The Quran/2 - The Cow/ (surah folder)
 {surah}_{ayah}.md                                    → 2_255.md
 [[2_255]]                                            → the wikilink form
 
@@ -239,10 +249,10 @@ take their page title from the `title` frontmatter
 (`data.Surah.display_name()`, `2_255: The Cow البقرة`) instead.
 
 Anything that finds notes by path has to follow a rename too: canvases store
-vault paths, which `assets.relink_canvas` moves from the old layout.
-`Quran.base` links each surah's card to its `index` note, picked by
-`file.name == "index"` plus the `surah_name` property; the card heading is the
-index note's `title` (`2 - The Cow البقرة`).
+vault paths, which `assets.relink_canvas` moves from the old layouts.
+The surah cards (`explore.QURAN_BASE`) link each card to a surah's `index`
+note, picked by `file.name == "index"` plus the `surah_name` property; the
+card heading is the index note's `title` (`2 - The Cow البقرة`).
 
 Renaming a note type means moving the existing files, not writing new ones
 beside them — `notes.rename_note` does that, so the reader's personal section

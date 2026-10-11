@@ -56,12 +56,17 @@ def _path(key: str, default: str) -> Path:
 # ── Where the vault is written ───────────────────────────────────────────────
 VAULT_PATH = _path("VAULT_PATH", "../Tadabbur")
 
-# Folder inside the vault that holds the generated indexes, Names of Allah
-# and Personalities notes. Everything else is one folder per surah.
-EXPLORE_DIR = _get("EXPLORE_DIR", "0 - Explore")
+# The vault's sections, one top-level folder each. They are the four cards on
+# the home page and the four parents in the site's left panel, and each
+# folder's name is the first segment of its pages' addresses.
+QURAN_DIR = "The Quran"             # one folder per surah inside
+PERSONALITIES_DIR = "Personalities"
+ASMA_DIR = "Asma Ul Husna"
 
-ASMA_DIR = f"{EXPLORE_DIR}/Asma Ul Husna"
-PERSONALITIES_DIR = f"{EXPLORE_DIR}/Personalities"
+# Where earlier versions kept the Personalities and Names folders, with the
+# surah folders beside it at the top level. tadabbur/layout.py moves a vault
+# still laid out that way.
+LEGACY_EXPLORE_DIR = "0 - Explore"
 ATTACHMENTS_DIR = "attachments"
 
 

@@ -112,13 +112,8 @@ def generate() -> tuple:
     for surah_number_str, ayaat in data.quran.items():
         surah = data.SURAHS[int(surah_number_str)]
 
-        # Folders used to be named '2 - The Cow البقرة', then '2 The Cow'.
-        # Move anything still at an old path first, so a reader's personal
-        # sections survive the rename instead of being stranded.
-        for old_name in (f"{surah.number} - {surah.english} {surah.arabic}",
-                         f"{surah.number} {surah.english}"):
-            notes.rename_folder(config.VAULT_PATH, old_name, surah.folder_name)
-        folder = config.VAULT_PATH / surah.folder_name
+        # Folders at an older path were moved here by layout.migrate.
+        folder = config.VAULT_PATH / surah.folder
 
         for entry in ayaat:
             ayah = entry["verse"]

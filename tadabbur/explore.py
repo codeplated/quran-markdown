@@ -1,22 +1,30 @@
 """
-The vault's front page: the thematic index, the same themes A–Z, and the
-Obsidian base view that shows one card per surah.
+The home page and the pages it leads to that aren't a folder of notes: the
+Quran's own page, with one card per surah, and the list of themes.
+
+The home page offers four ways in, The Quran, Personalities, Asma Ul Husna and
+Themes. They are the same four the site's left panel shows as its parents.
 """
 
 import config
 import quranConnections as connections
 from tadabbur import data, notes
 
-# Both theme tables carry the same counts, so both explain them the same way.
 COUNTS_NOTE = ("*Notes* is the number of notes that carry each tag: the ayaat, "
                "plus any personality or Name of Allah notes that share it.\n")
 
-# The A–Z themes note. Its filename is the sidebar label, its wikilink target
-# and its page title, and three pages link to it, so it is named once here.
+# The themes note, at the top level of the vault. Its filename is the sidebar
+# label, its wikilink target and its page title.
 THEMES_NOTE = "Themes"
-THEMES_PATH = f"{config.EXPLORE_DIR}/{THEMES_NOTE}"
 
-# One card per surah, linking to the surah's index note. Every folder index
+# Notes that lived under '0 - Explore' and were rebuilt wholesale on every
+# run: the Explore page, which the home page's cards replace, and the old
+# Themes A–Z note. layout.migrate removes them.
+RETIRED_EXPLORE_NOTES = ("index.md", "Themes.md")
+
+# The view on the Quran's page: one card per surah, linking to the surah's
+# index note. It is written into The Quran/index.md as a `base` block, which
+# Obsidian and the site both draw in place. Every folder index
 # is called "index", so the surah ones are told apart by their surah_name
 # property; the number is parsed from "surah: 2 / 114" so the cards sort in
 # Mushaf order. The site draws each card's heading from the note's title on
@@ -39,8 +47,9 @@ views:
     imageAspectRatio: 1
 """
 
-# Quran.base as earlier versions wrote it. A vault still holding one of these
-# unchanged gets the current file; one edited inside Obsidian is left alone.
+# Quran.base, a file of its own under '0 - Explore', as earlier versions wrote
+# it. layout.migrate removes one of these left unchanged; a copy edited inside
+# Obsidian is left alone.
 # The first matched ayah notes by "_1:", which the bare "2_1" names never
 # contain, so it showed no cards at all.
 _FIRST_AYAH_BASE = """formulas:
@@ -68,6 +77,10 @@ OLD_QURAN_BASES = (
                     .replace("note.title", "file.name"),
     _FIRST_AYAH_BASE,
 )
+
+
+# Every text the generator has written to Quran.base, the current view included.
+GENERATED_QURAN_BASES = (QURAN_BASE, *OLD_QURAN_BASES)
 
 
 def theme_counts() -> dict:
@@ -105,13 +118,57 @@ def _intro() -> str:
     )
 
 
+def _card(target: str, label: str, description: str) -> str:
+    """One way in: a link, and a line saying what is behind it."""
+    return f"- [[{target}|{label}]] <small>{description}</small>\n"
+
+
 def write_index() -> None:
-    """The master table of every theme, grouped by category."""
+    """The home page: what Tadabbur is, then the four ways in."""
+    head = notes.frontmatter({"title": "Tadabbur", "cssclasses": "[home]"})
+
+    cards = "".join([
+        _card(f"{config.QURAN_DIR}/index", "The Quran",
+              f"All {data.SURAH_COUNT} surahs. Open a surah for its ayaat, each "
+              "with recitation, translations and tafsir."),
+        _card(f"{config.PERSONALITIES_DIR}/index", "Personalities",
+              f"The {len(data.personalities)} prophets, companions, groups and "
+              "figures the Quran speaks about."),
+        _card(f"{config.ASMA_DIR}/index", "Asma Ul Husna",
+              f"The {len(data.asma_ul_husna)} Names of Allah, with their "
+              "meanings, roots and the ayaat they appear in."),
+        _card(THEMES_NOTE, "Themes",
+              f"The {len(connections.THEMES)} themes of the Quran, each listing "
+              "every ayah that carries it."),
+    ])
+
+    notes.write_plain(config.VAULT_PATH, "index.md", head + _intro() + cards)
+
+
+def write_quran_index() -> None:
+    """
+    The Quran folder's own page: the surah cards.
+
+    Left to itself the site would list the folder, 114 names sorted as text
+    (1, 10, 100, 101 …). The cards are a `base` block in the page, so there
+    is no separate Quran.base page beside it.
+    """
+    body = (
+        notes.frontmatter({"title": notes.quote("The Quran")})
+        + f"All {data.SURAH_COUNT} surahs, in order. Open one for its ayaat.\n\n"
+        + f"```base\n{QURAN_BASE}```\n"
+    )
+    notes.write_plain(config.VAULT_PATH / config.QURAN_DIR, "index.md", body)
+
+
+def write_themes_index() -> None:
+    """Every theme, grouped by category: the tables the home page used to hold."""
     counts = theme_counts()
 
     lines = [
-        _intro(),
-        "# The General Topics of the Quran\n",
+        notes.frontmatter({"title": THEMES_NOTE}),
+        f"The {len(connections.THEMES)} themes of the Quran, by topic. Open one "
+        "for every ayah that carries it.\n",
         "\n" + COUNTS_NOTE,
     ]
 
@@ -133,81 +190,4 @@ def write_index() -> None:
             f"| {description} |\n"
         )
 
-    notes.write_plain(config.VAULT_PATH, "index.md", "".join(lines))
-
-
-def write_themes_index() -> None:
-    """
-    Every theme A–Z.
-
-    The front page groups the themes by subject, which is the order for a
-    reader following an idea. A reader who already has the name of a topic
-    needs the other order, and the site's own /tags page gives only that: bare
-    tag names, no Urdu, no counts, and nothing saying what a tag covers.
-
-    A note rather than a section of the front page, because the sidebar is a
-    file tree — only a real file puts Themes under Explore — and because the
-    two orders of 139 rows on one page would bury whichever came second.
-    """
-    counts = theme_counts()
-
-    lines = [
-        "# Themes A–Z\n",
-        f"\nAll {len(connections.THEMES)} themes in alphabetical order.\n",
-        "\n" + COUNTS_NOTE,
-        "\n| Topic | Tag | Category | Notes | Description |\n",
-        "|-------|-----|----------|-------|-------------|\n",
-    ]
-
-    alphabetical = sorted(connections.THEMES.items(), key=lambda item: item[1][1].lower())
-
-    for key, (category, title, urdu_title, description) in alphabetical:
-        lines.append(
-            f"| **{title}** {urdu_title} "
-            f"| [#{key}](tags/{key}) "
-            f"| {category} "
-            f"| {counts[key]} "
-            f"| {description} |\n"
-        )
-
-    notes.write_plain(config.VAULT_PATH / config.EXPLORE_DIR,
-                      f"{THEMES_NOTE}.md", "".join(lines))
-
-
-def write_explore_index() -> None:
-    """
-    The Explore folder's own page.
-
-    Left to itself the site lists the folder — two links, no counts, and no
-    Quran.base at all, because a folder listing leaves .base files out. That
-    hides the surah grid from the one page meant to lead to it.
-    """
-    lines = [
-        "# Explore\n\n",
-        "Ways into the Quran beyond reading it surah by surah.\n\n",
-        "| Section | What it holds |\n",
-        "|---------|---------------|\n",
-        f"| [[{config.EXPLORE_DIR}/Quran.base\\|The Quran]] "
-        f"| all {data.SURAH_COUNT} surahs as cards, in order |\n",
-        f"| [[{config.ASMA_DIR}/index\\|Asma ul Husna]] "
-        f"| the {len(data.asma_ul_husna)} Names, grouped by what they tell us |\n",
-        f"| [[{config.PERSONALITIES_DIR}/index\\|Personalities]] "
-        f"| {len(data.personalities)} prophets, companions, groups and figures |\n",
-        f"| [[{THEMES_PATH}\\|Themes]] "
-        f"| every one of the {len(connections.THEMES)} themes, A–Z |\n",
-    ]
-
-    notes.write_plain(config.VAULT_PATH / config.EXPLORE_DIR, "index.md", "".join(lines))
-
-
-def write_quran_base() -> None:
-    """
-    Writes Quran.base once; later edits made inside Obsidian are kept. A file
-    still exactly as an earlier version wrote it is replaced, since it no
-    longer matches the ayah note names.
-    """
-    folder = config.VAULT_PATH / config.EXPLORE_DIR
-    existing = folder / "Quran.base"
-    if existing.exists() and existing.read_text(encoding="utf-8") not in OLD_QURAN_BASES:
-        return
-    notes.write_plain(folder, "Quran.base", QURAN_BASE)
+    notes.write_plain(config.VAULT_PATH, f"{THEMES_NOTE}.md", "".join(lines))

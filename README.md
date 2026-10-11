@@ -70,7 +70,8 @@ what to fix.
 | [`tadabbur/ayah_notes.py`](tadabbur/ayah_notes.py) | the 6,236 ayah notes |
 | [`tadabbur/asma_notes.py`](tadabbur/asma_notes.py) | the 99 Names of Allah |
 | [`tadabbur/personalities.py`](tadabbur/personalities.py) | the 79 figures and their indexes |
-| [`tadabbur/explore.py`](tadabbur/explore.py) | the thematic index, and the same themes A–Z |
+| [`tadabbur/explore.py`](tadabbur/explore.py) | the home page's four cards, the Quran's page, the themes note |
+| [`tadabbur/layout.py`](tadabbur/layout.py) | moves an older vault into the section folders |
 | [`tadabbur/assets.py`](tadabbur/assets.py) | thumbnails, hand-made vault files |
 
 Separately, the **knowledge graph** — the part that is study work rather than

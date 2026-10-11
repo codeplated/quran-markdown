@@ -30,17 +30,20 @@ def build(parts: set, quiet: bool) -> None:
     """Runs the requested build steps in dependency order."""
     # Imported here so that --help and config errors are reported before the
     # dataset is read into memory.
-    from tadabbur import (assets, asma_notes, ayah_notes, explore, personalities,
-                          surah_index)
+    from tadabbur import (assets, asma_notes, ayah_notes, explore, layout,
+                          personalities, surah_index)
+
+    moved = layout.migrate()
+    if moved and not quiet:
+        print(f"  Moved {moved} folders into the current layout")
 
     results = []
 
     if "index" in parts:
         explore.write_index()
+        explore.write_quran_index()
         explore.write_themes_index()
-        explore.write_explore_index()
-        explore.write_quran_base()
-        results.append(("Index & base view", None, None))
+        results.append(("Home, Quran & Themes pages", None, None))
 
     if "assets" in parts:
         copied = assets.copy_vault_files() + assets.copy_thumbnails()

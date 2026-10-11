@@ -18,7 +18,7 @@ from pathlib import Path
 import config
 import quranConnections as connections
 from tadabbur import (asma_notes, assets, audio, ayah_notes, data, explore,
-                      notes, personalities, surah_index)
+                      layout, notes, personalities, surah_index)
 
 
 class GlobalAyahNumbering(unittest.TestCase):
@@ -91,8 +91,12 @@ class NoteFilenames(unittest.TestCase):
     def test_ayah_display_name(self):
         self.assertEqual(data.SURAHS[2].display_name(255), "2_255: The Cow البقرة")
 
-    def test_folder_name_matches_explore_and_has_no_arabic(self):
+    def test_folder_name_has_no_arabic(self):
         self.assertEqual(data.SURAHS[2].folder_name, "2 - The Cow")
+
+    def test_surah_folder_sits_under_the_quran(self):
+        self.assertEqual(data.SURAHS[2].folder, "The Quran/2 - The Cow")
+        self.assertEqual(data.SURAHS[2].index_path, "The Quran/2 - The Cow/index")
 
 
 class PersonalSectionSurvival(unittest.TestCase):
@@ -238,8 +242,8 @@ class SurahIndexNote(unittest.TestCase):
 
     def test_neighbour_links_use_full_vault_paths(self):
         """A bare [[index]] is ambiguous — 114 notes carry that name."""
-        self.assertIn("[[1 - The Opener/index|", self.note)
-        self.assertIn("[[3 - Family of Imran/index|", self.note)
+        self.assertIn("[[The Quran/1 - The Opener/index|", self.note)
+        self.assertIn("[[The Quran/3 - Family of Imran/index|", self.note)
 
     def test_first_and_last_surah_have_one_neighbour(self):
         self.assertNotIn("← ", surah_index.build(data.SURAHS[1]))
@@ -252,11 +256,11 @@ class SurahIndexNote(unittest.TestCase):
         self.assertEqual([c for _k, c in themes], sorted((c for _k, c in themes), reverse=True))
 
 
-class ThemeIndexes(unittest.TestCase):
+class HomeAndSectionPages(unittest.TestCase):
     """
-    The same themes twice: grouped by subject on the front page, A–Z under
-    Explore. Each order must be complete; both are reachable from the Explore
-    hub.
+    The home page offers four ways in, the same four the site's left panel
+    shows; the Quran's page holds the surah cards and the themes note the
+    tables the home page used to hold.
     """
 
     def setUp(self):
@@ -264,36 +268,41 @@ class ThemeIndexes(unittest.TestCase):
         self.original_vault, config.VAULT_PATH = config.VAULT_PATH, self.vault
 
         explore.write_index()
+        explore.write_quran_index()
         explore.write_themes_index()
-        explore.write_explore_index()
 
-        explore_dir = self.vault / config.EXPLORE_DIR
-        self.front = (self.vault / "index.md").read_text(encoding="utf-8")
-        self.themes = (explore_dir / f"{explore.THEMES_NOTE}.md").read_text(encoding="utf-8")
-        self.explore = (explore_dir / "index.md").read_text(encoding="utf-8")
+        self.home = (self.vault / "index.md").read_text(encoding="utf-8")
+        self.quran = (self.vault / "The Quran" / "index.md").read_text(encoding="utf-8")
+        self.themes = (self.vault / "Themes.md").read_text(encoding="utf-8")
 
     def tearDown(self):
         config.VAULT_PATH = self.original_vault
 
-    def test_both_orders_hold_every_theme(self):
+    def test_home_offers_the_four_ways_in_order(self):
+        cards = re.findall(r"^- \[\[([^|]+)\|([^\]]+)\]\]", self.home, re.MULTILINE)
+        self.assertEqual(cards, [("The Quran/index", "The Quran"),
+                                 ("Personalities/index", "Personalities"),
+                                 ("Asma Ul Husna/index", "Asma Ul Husna"),
+                                 ("Themes", "Themes")])
+
+    def test_home_no_longer_carries_the_theme_tables(self):
+        self.assertNotIn("](tags/", self.home)
+        self.assertNotIn("| Topic |", self.home)
+
+    def test_quran_page_holds_the_surah_cards_as_a_base_block(self):
+        self.assertIn("```base\n" + explore.QURAN_BASE + "```", self.quran)
+        self.assertIn('title: "The Quran"', self.quran)
+
+    def test_themes_note_holds_every_theme_by_category(self):
         for key in connections.THEMES:
-            self.assertIn(f"](tags/{key})", self.front, key)
             self.assertIn(f"](tags/{key})", self.themes, key)
-
-    def test_themes_note_is_alphabetical(self):
-        titles = re.findall(r"^\| \*\*(.+?)\*\* ", self.themes, re.MULTILINE)
-        self.assertEqual(len(titles), len(connections.THEMES))
-        self.assertEqual(titles, sorted(titles, key=str.lower))
-
-    def test_explore_points_at_the_note_not_the_tag_page(self):
-        """A real note is what puts Themes in the sidebar; /tags is not a note."""
-        self.assertIn(f"[[{explore.THEMES_PATH}\\|Themes]]", self.explore)
-        self.assertNotIn("[Themes](tags)", self.explore)
+        categories = re.findall(r"^### (.+)$", self.themes, re.MULTILINE)
+        self.assertEqual(categories,
+                         list(dict.fromkeys(t[0] for t in connections.THEMES.values())))
 
     def test_no_emoji(self):
-        for page, where in ((self.front, "front page"),
-                            (self.themes, "themes A–Z"),
-                            (self.explore, "explore index")):
+        for page, where in ((self.home, "home page"), (self.quran, "Quran page"),
+                            (self.themes, "themes note")):
             found = NoEmojiInGeneratedNotes.EMOJI.findall(page)
             self.assertEqual(found, [], f"{where} contains {found}")
 
@@ -541,7 +550,7 @@ class RenamedFolderKeepsPersonalSections(unittest.TestCase):
         self.assertFalse(notes.rename_folder(self.parent, "1 - old", "1 new"))
 
 
-class QuranBaseMatchesAyahNotes(unittest.TestCase):
+class QuranCardsMatchSurahNotes(unittest.TestCase):
     """The surah grid shows one card per surah, linking to its index note."""
 
     def test_filters_on_what_only_surah_indexes_have(self):
@@ -556,31 +565,48 @@ class QuranBaseMatchesAyahNotes(unittest.TestCase):
     def test_card_title_is_not_repeated_as_a_row(self):
         self.assertNotIn("note.title", explore.QURAN_BASE)
 
-    def test_replaces_an_old_generated_copy(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            folder = Path(tmp) / config.EXPLORE_DIR
-            folder.mkdir()
-            (folder / "Quran.base").write_text(explore.OLD_QURAN_BASES[0], encoding="utf-8")
-            original, config.VAULT_PATH = config.VAULT_PATH, Path(tmp)
-            try:
-                explore.write_quran_base()
-            finally:
-                config.VAULT_PATH = original
-            self.assertEqual((folder / "Quran.base").read_text(encoding="utf-8"),
-                             explore.QURAN_BASE)
 
-    def test_keeps_a_copy_edited_in_obsidian(self):
+class LayoutMigration(unittest.TestCase):
+    """An older vault moves into the section folders with the reader's notes."""
+
+    def _old_vault(self, tmp):
+        vault = Path(tmp)
+        (vault / "2 - The Cow").mkdir()
+        (vault / "2 - The Cow" / "2_255.md").write_text("mine", encoding="utf-8")
+        explore_dir = vault / config.LEGACY_EXPLORE_DIR
+        (explore_dir / "Personalities").mkdir(parents=True)
+        (explore_dir / "Personalities" / "Adam.md").write_text("adam", encoding="utf-8")
+        (explore_dir / "Asma Ul Husna").mkdir()
+        (explore_dir / "index.md").write_text("generated", encoding="utf-8")
+        (explore_dir / "Themes.md").write_text("generated", encoding="utf-8")
+        return vault, explore_dir
+
+    def test_moves_everything_into_the_sections(self):
         with tempfile.TemporaryDirectory() as tmp:
-            folder = Path(tmp) / config.EXPLORE_DIR
-            folder.mkdir()
-            (folder / "Quran.base").write_text("my own view\n", encoding="utf-8")
-            original, config.VAULT_PATH = config.VAULT_PATH, Path(tmp)
-            try:
-                explore.write_quran_base()
-            finally:
-                config.VAULT_PATH = original
-            self.assertEqual((folder / "Quran.base").read_text(encoding="utf-8"),
-                             "my own view\n")
+            vault, explore_dir = self._old_vault(tmp)
+            (explore_dir / "Quran.base").write_text(explore.OLD_QURAN_BASES[0],
+                                                    encoding="utf-8")
+            self.assertEqual(layout.migrate(vault), 3)
+            self.assertEqual((vault / "The Quran/2 - The Cow/2_255.md").read_text(), "mine")
+            self.assertEqual((vault / "Personalities" / "Adam.md").read_text(), "adam")
+            self.assertTrue((vault / "Asma Ul Husna").is_dir())
+            self.assertFalse(explore_dir.exists())
+            self.assertEqual(layout.migrate(vault), 0)
+
+    def test_moves_the_oldest_folder_names_too(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            vault = Path(tmp)
+            (vault / "2 The Cow").mkdir()
+            (vault / "2 The Cow" / "2_255.md").write_text("mine", encoding="utf-8")
+            layout.migrate(vault)
+            self.assertEqual((vault / "The Quran/2 - The Cow/2_255.md").read_text(), "mine")
+
+    def test_keeps_a_base_edited_in_obsidian(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            vault, explore_dir = self._old_vault(tmp)
+            (explore_dir / "Quran.base").write_text("my own view\n", encoding="utf-8")
+            layout.migrate(vault)
+            self.assertEqual((explore_dir / "Quran.base").read_text(), "my own view\n")
 
 
 class CanvasRelinking(unittest.TestCase):
@@ -592,24 +618,26 @@ class CanvasRelinking(unittest.TestCase):
               '\t\t{"id":"c","type":"text","text":"mine","x":2}\n'
               '\t]\n}')
 
-    def test_rewrites_old_ayah_paths_only(self):
+    def test_rewrites_old_paths_only(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "x.canvas"
             path.write_text(self.CANVAS, encoding="utf-8")
             self.assertTrue(assets.relink_canvas(path))
-            expected = self.CANVAS.replace(
-                "2 - The Cow البقرة/2_255: The Cow البقرة.md",
-                f"{data.SURAHS[2].folder_name}/{data.SURAHS[2].note_name(255)}.md")
+            expected = (self.CANVAS
+                        .replace("2 - The Cow البقرة/2_255: The Cow البقرة.md",
+                                 "The Quran/2 - The Cow/2_255.md")
+                        .replace("0 - Explore/Personalities/", "Personalities/"))
             self.assertEqual(path.read_text(encoding="utf-8"), expected)
             self.assertFalse(assets.relink_canvas(path))
 
-    def test_rewrites_the_undashed_folder_layout(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "x.canvas"
-            path.write_text('{"file":"2 The Cow/2_255.md"}', encoding="utf-8")
-            self.assertTrue(assets.relink_canvas(path))
-            self.assertEqual(path.read_text(encoding="utf-8"),
-                             '{"file":"2 - The Cow/2_255.md"}')
+    def test_rewrites_the_top_level_folder_layouts(self):
+        for old in ("2 The Cow/2_255.md", "2 - The Cow/2_255.md"):
+            with tempfile.TemporaryDirectory() as tmp:
+                path = Path(tmp) / "x.canvas"
+                path.write_text(f'{{"file":"{old}"}}', encoding="utf-8")
+                self.assertTrue(assets.relink_canvas(path))
+                self.assertEqual(path.read_text(encoding="utf-8"),
+                                 '{"file":"The Quran/2 - The Cow/2_255.md"}')
 
     def test_shipped_canvases_point_at_current_notes(self):
         for canvas in config.VAULT_FILES_SRC.rglob("*.canvas"):

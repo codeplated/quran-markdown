@@ -29,7 +29,7 @@ def note_path(number: int) -> str:
     Wikilinks resolve from the vault root, and 114 notes are called 'index',
     so a bare [[index]] is ambiguous — the path is what makes it land.
     """
-    return f"{data.SURAHS[number].folder_name}/index"
+    return data.SURAHS[number].index_path
 
 
 def theme_counts(number: int) -> list:
@@ -135,7 +135,7 @@ def generate() -> tuple:
     for number in range(1, data.SURAH_COUNT + 1):
         surah = data.SURAHS[number]
         is_new = notes.write_note(
-            config.VAULT_PATH / surah.folder_name,
+            config.VAULT_PATH / surah.folder,
             "index.md",
             build(surah),
             notes.SURAH_PERSONAL,

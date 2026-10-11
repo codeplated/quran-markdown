@@ -12,8 +12,16 @@ from tadabbur import data
 
 # An ayah note's vault path in any layout, old or current:
 # "2 - The Cow البقرة/2_255: The Cow البقرة.md", "2 The Cow/2_255.md",
-# "2 - The Cow/2_255.md". A current path maps to itself.
-OLD_AYAH_PATH = re.compile(r"(\d+) [^/]+/(\d+)_(\d+)(?:: [^/]+)?\.md")
+# "2 - The Cow/2_255.md", "The Quran/2 - The Cow/2_255.md". A current path
+# maps to itself.
+OLD_AYAH_PATH = re.compile(
+    rf"(?:{re.escape(config.QURAN_DIR)}/)?(\d+) [^/]+/(\d+)_(\d+)(?:: [^/]+)?\.md")
+
+# Folders layout.migrate moved, for canvas cards pointing into them.
+MOVED_FOLDERS = (
+    (f"{config.LEGACY_EXPLORE_DIR}/Personalities", config.PERSONALITIES_DIR),
+    (f"{config.LEGACY_EXPLORE_DIR}/Asma Ul Husna", config.ASMA_DIR),
+)
 
 
 def copy_thumbnails() -> int:
@@ -64,21 +72,20 @@ def copy_vault_files() -> int:
             continue
 
         target = config.VAULT_PATH / item.relative_to(source)
-        if target.exists():
-            if target.suffix == ".canvas":
-                relink_canvas(target)
-            continue
+        if not target.exists():
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(item, target)
+            copied += 1
 
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(item, target)
-        copied += 1
+        if target.suffix == ".canvas":
+            relink_canvas(target)
 
     return copied
 
 
 def relink_canvas(path) -> bool:
     """
-    Points a canvas's cards at the ayah notes' current paths.
+    Points a canvas's cards at the notes' current paths.
 
     A canvas stores each card's note as a vault path, and the notes were
     renamed from outside Obsidian, so nothing updated those paths and the
@@ -87,11 +94,14 @@ def relink_canvas(path) -> bool:
     byte for byte. Returns True if the file changed.
     """
     def current(value: re.Match) -> str:
+        for old_folder, new_folder in MOVED_FOLDERS:
+            if value[0].startswith(old_folder + "/"):
+                return new_folder + value[0][len(old_folder):]
         old = OLD_AYAH_PATH.fullmatch(value[0])
         if not old or old[1] != old[2] or int(old[2]) not in data.SURAHS:
             return value[0]
         surah = data.SURAHS[int(old[2])]
-        return f"{surah.folder_name}/{surah.note_name(int(old[3]))}.md"
+        return f"{surah.folder}/{surah.note_name(int(old[3]))}.md"
 
     text = path.read_text(encoding="utf-8")
     updated = re.sub(r'(?<="file":")[^"]+(?=")', current, text)
