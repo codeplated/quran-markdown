@@ -62,6 +62,9 @@ VAULT_PATH = _path("VAULT_PATH", "../Tadabbur")
 QURAN_DIR = "The Quran"             # one folder per surah inside
 PERSONALITIES_DIR = "Personalities"
 ASMA_DIR = "Asma Ul Husna"
+# Themes. The folder is `tags` because the site serves a theme's page at
+# /tags/<key>; its index note is titled "Themes", which is what readers see.
+THEMES_DIR = "tags"
 
 # Where earlier versions kept the Personalities and Names folders, with the
 # surah folders beside it at the top level. tadabbur/layout.py moves a vault

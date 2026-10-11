@@ -8,12 +8,14 @@ import re
 import shutil
 
 import config
-from tadabbur import data
+from tadabbur import data, personalities
 
 # An ayah note's vault path in any layout, old or current:
 # "2 - The Cow البقرة/2_255: The Cow البقرة.md", "2 The Cow/2_255.md",
 # "2 - The Cow/2_255.md", "The Quran/2 - The Cow/2_255.md". A current path
 # maps to itself.
+RETIRED_PATH_PAGES = f"{config.PERSONALITIES_DIR}/{personalities.RETIRED_PATH_FOLDER}"
+
 OLD_AYAH_PATH = re.compile(
     rf"(?:{re.escape(config.QURAN_DIR)}/)?(\d+) [^/]+/(\d+)_(\d+)(?:: [^/]+)?\.md")
 
@@ -94,9 +96,16 @@ def relink_canvas(path) -> bool:
     byte for byte. Returns True if the file changed.
     """
     def current(value: re.Match) -> str:
+        path = value[0]
         for old_folder, new_folder in MOVED_FOLDERS:
-            if value[0].startswith(old_folder + "/"):
-                return new_folder + value[0][len(old_folder):]
+            if path.startswith(old_folder + "/"):
+                path = new_folder + path[len(old_folder):]
+        # A card on one of the retired path pages shows the Personalities
+        # page, which holds the same lists as tabs.
+        if path.startswith(RETIRED_PATH_PAGES + "/"):
+            return f"{config.PERSONALITIES_DIR}/index.md"
+        if path != value[0]:
+            return path
         old = OLD_AYAH_PATH.fullmatch(value[0])
         if not old or old[1] != old[2] or int(old[2]) not in data.SURAHS:
             return value[0]

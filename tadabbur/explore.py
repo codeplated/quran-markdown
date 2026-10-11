@@ -1,6 +1,5 @@
 """
-The home page and the pages it leads to that aren't a folder of notes: the
-Quran's own page, with one card per surah, and the list of themes.
+The home page and the Quran's own page, with one card per surah.
 
 The home page offers four ways in, The Quran, Personalities, Asma Ul Husna and
 Themes. They are the same four the site's left panel shows as its parents.
@@ -10,17 +9,12 @@ import config
 import quranConnections as connections
 from tadabbur import data, notes
 
-COUNTS_NOTE = ("*Notes* is the number of notes that carry each tag: the ayaat, "
-               "plus any personality or Name of Allah notes that share it.\n")
-
-# The themes note, at the top level of the vault. Its filename is the sidebar
-# label, its wikilink target and its page title.
-THEMES_NOTE = "Themes"
-
 # Notes that lived under '0 - Explore' and were rebuilt wholesale on every
 # run: the Explore page, which the home page's cards replace, and the old
-# Themes A–Z note. layout.migrate removes them.
+# Themes A–Z note. layout.migrate removes them, and the Themes note that stood
+# at the top level before the themes had a folder of their own.
 RETIRED_EXPLORE_NOTES = ("index.md", "Themes.md")
+RETIRED_THEMES_NOTE = "Themes.md"
 
 # The view on the Quran's page: one card per surah, linking to the surah's
 # index note. It is written into The Quran/index.md as a `base` block, which
@@ -83,24 +77,6 @@ OLD_QURAN_BASES = (
 GENERATED_QURAN_BASES = (QURAN_BASE, *OLD_QURAN_BASES)
 
 
-def theme_counts() -> dict:
-    """How many notes carry each theme — ayaat plus personalities plus Names."""
-    counts = {key: 0 for key in connections.THEMES}
-
-    tag_lists = (
-        list(connections.AYAH_TAGS.values())
-        + [person.get("tags", []) for person in data.personalities]
-        + [name.get("tags", []) for name in data.asma_ul_husna]
-    )
-
-    for tags in tag_lists:
-        for tag in tags:
-            if tag in counts:
-                counts[tag] += 1
-
-    return counts
-
-
 def _intro() -> str:
     reference = data.SURAHS[47].note_name(24)
     return (
@@ -137,9 +113,9 @@ def write_index() -> None:
         _card(f"{config.ASMA_DIR}/index", "Asma Ul Husna",
               f"The {len(data.asma_ul_husna)} Names of Allah, with their "
               "meanings, roots and the ayaat they appear in."),
-        _card(THEMES_NOTE, "Themes",
-              f"The {len(connections.THEMES)} themes of the Quran, each listing "
-              "every ayah that carries it."),
+        _card(f"{config.THEMES_DIR}/index", "Themes",
+              f"The {len(connections.THEMES)} themes of the Quran, by topic or "
+              "A–Z, each listing every ayah that carries it."),
     ])
 
     notes.write_plain(config.VAULT_PATH, "index.md", head + _intro() + cards)
@@ -159,35 +135,3 @@ def write_quran_index() -> None:
         + f"```base\n{QURAN_BASE}```\n"
     )
     notes.write_plain(config.VAULT_PATH / config.QURAN_DIR, "index.md", body)
-
-
-def write_themes_index() -> None:
-    """Every theme, grouped by category: the tables the home page used to hold."""
-    counts = theme_counts()
-
-    lines = [
-        notes.frontmatter({"title": THEMES_NOTE}),
-        f"The {len(connections.THEMES)} themes of the Quran, by topic. Open one "
-        "for every ayah that carries it.\n",
-        "\n" + COUNTS_NOTE,
-    ]
-
-    category = None
-    row = 0
-
-    for key, (theme_category, title, urdu_title, description) in connections.THEMES.items():
-        if theme_category != category:
-            category = theme_category
-            lines.append(f"\n### {theme_category}\n")
-            lines.append("| # | Topic | Tag | Notes | Description |\n")
-            lines.append("|---|-------|-----|-------|-------------|\n")
-
-        row += 1
-        lines.append(
-            f"| {row} | **{title}** {urdu_title} "
-            f"| [#{key}](tags/{key}) "
-            f"| {counts[key]} "
-            f"| {description} |\n"
-        )
-
-    notes.write_plain(config.VAULT_PATH, f"{THEMES_NOTE}.md", "".join(lines))

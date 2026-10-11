@@ -1,6 +1,6 @@
 """
 The 79 Quranic personalities — prophets, angels, jinn, companions, groups —
-plus the master index and the per-path indexes under Personalities/Filtered/.
+plus the Personalities page that lists them, with a tab for each path.
 
 `type` and `path` are fields on each entry, not tags. Both are spelled out in
 English and Urdu wherever they appear, so a note says what a figure is without
@@ -28,23 +28,32 @@ TYPE_META = {
     "group":     ("Group / Nation", "قوم / گروہ"),
 }
 
-PATH_INDEX_FILES = {
-    "straight": "Straight Path.md",
-    "deviated": "Deviated Path.md",
-    "mixed": "Mixed Path.md",
-}
+# The tabs on the Personalities page after "All": the tab's name, and the path
+# it shows.
+PATH_TABS = (
+    ("Straight Path", "straight"),
+    ("Mixed Path", "mixed"),
+    ("Deviated Path", "deviated"),
+)
 
-PATH_INTROS = {
+# Said once under the table, where each used to open a page of its own.
+PATH_NOTES = {
     "deviated": (
-        "> Understanding why they deviated is as important as understanding "
+        "Understanding why they deviated is as important as understanding "
         "why the righteous succeeded. The Quran presents them as warnings, "
-        "not as targets for hatred.\n\n"
+        "not as targets for hatred."
     ),
     "mixed": (
-        "> These figures neither fit cleanly into straight nor deviated. "
-        "Their stories show the complexity of moral life and the power of repentance.\n\n"
+        "These figures fit cleanly into neither the straight path nor the "
+        "deviated one. Their stories show the complexity of moral life and the "
+        "power of repentance."
     ),
 }
+
+# Each path once had a page of its own under Personalities/Filtered/. The tabs
+# replace them; layout.migrate removes the old pages.
+RETIRED_PATH_PAGES = ("Straight Path.md", "Deviated Path.md", "Mixed Path.md")
+RETIRED_PATH_FOLDER = "Filtered"
 
 
 def path_meta(person: dict) -> tuple:
@@ -60,17 +69,18 @@ def note_name(person: dict) -> str:
     return f"{person['name_english']} — {person['name_arabic']}"
 
 
-def _truncate(text: str, limit: int = 60) -> str:
-    """Shortens a value so it does not blow out a table column."""
-    return text if len(text) <= limit else text[:limit - 1] + "…"
-
-
-def _table_link(person: dict) -> str:
+def listing_order(everyone: list) -> dict:
     """
-    A wikilink safe inside a table cell: the pipe in [[file|alias]] has to be
-    escaped, or the parser reads it as a column break.
+    Each figure's place in the Personalities table, by id: types in the order
+    TYPE_META declares, and within a type the order of the data, which runs
+    roughly from the earliest figure to the latest.
     """
-    return f"[[{note_name(person)}\\|{person['name_english']}]]"
+    rank = {key: position for position, key in enumerate(TYPE_META)}
+    ordered = sorted(
+        enumerate(everyone),
+        key=lambda pair: (rank.get(pair[1]["type"], len(rank)), pair[0]),
+    )
+    return {person["id"]: place for place, (_, person) in enumerate(ordered, 1)}
 
 
 def _by_id(person_id: str, everyone: list) -> str:
@@ -106,6 +116,8 @@ def build(person: dict, everyone: list) -> str:
         "type": type_en,
         "path": path_en,
         "era": f"\"{person.get('era', '—')}\"",
+        # Not shown to the reader: it sorts the table on the Personalities page.
+        "order": listing_order(everyone)[person["id"]],
         "tags": json.dumps(person.get("tags", [])),
     })
 
@@ -173,74 +185,56 @@ def generate() -> tuple:
             updated += 1
 
     _write_master_index(everyone, folder)
-    for path in PATH_INDEX_FILES:
-        _write_path_index(everyone, folder / "Filtered", path)
 
     return created, updated
 
 
+def _view(name: str, columns: tuple, path: str | None = None) -> str:
+    """One tab of the Personalities table, as a view in a `base` block."""
+    lines = ["  - type: table", f"    name: {name}"]
+    if path:
+        lines += ["    filters:", "      and:",
+                  f'        - note.path == "{PATH_META[path][0]}"']
+    else:
+        # Rows are sorted by `order`, which runs through one type at a time,
+        # so the groups come out in TYPE_META's order rather than A to Z.
+        lines += ["    groupBy:", "      property: note.type", "      direction: ASC"]
+    lines += ["    order:", *(f"      - {column}" for column in columns)]
+    lines += ["    sort:", "      - property: note.order", "        direction: ASC"]
+    return "\n".join(lines) + "\n"
+
+
+def index_base() -> str:
+    """
+    The table on the Personalities page: every figure, and a tab per path.
+
+    Only personality notes carry both `path` and `era`, which is what picks
+    them out. Obsidian and the site both draw a `base` block in place, with
+    the views as tabs and columns that sort when their heading is clicked.
+    """
+    return (
+        "filters:\n"
+        "  and:\n"
+        '    - file.hasProperty("path")\n'
+        '    - file.hasProperty("era")\n'
+        "views:\n"
+        + _view("All", ("file.name", "note.path", "note.era"))
+        + "".join(_view(name, ("file.name", "note.type", "note.era"), path)
+                  for name, path in PATH_TABS)
+    )
+
+
 def _write_master_index(everyone: list, folder) -> None:
-    """One table per type, in the order TYPE_META declares."""
+    """The Personalities page: one table, filtered by path with tabs."""
     lines = [
-        "# Quranic Personalities — Master Index\n\n",
-        f"**Total: {len(everyone)}**\n\n",
+        notes.frontmatter({"title": "Personalities"}),
+        f"The {len(everyone)} prophets, angels, companions, groups and other "
+        "figures the Quran speaks about. Choose a path to narrow the list, or "
+        "click a column heading to sort by it.\n\n",
+        f"```base\n{index_base()}```\n",
     ]
-
-    for type_key, (type_en, type_ur) in TYPE_META.items():
-        group = [p for p in everyone if p["type"] == type_key]
-        if not group:
-            continue
-
-        lines.append(f"\n## {type_en} — {type_ur}\n\n")
-        lines.append("| # | Name | Path | Era |\n")
-        lines.append("|---|------|------|-----|\n")
-
-        for number, person in enumerate(group, 1):
-            path_en, _ = path_meta(person)
-            era = _truncate(person.get("era", "—"), 35)
-            lines.append(
-                f"| {number} | {_table_link(person)} | {path_en} | {era} |\n"
-            )
+    for name, path in PATH_TABS:
+        if path in PATH_NOTES:
+            lines.append(f"\n**{name}.** {PATH_NOTES[path]}\n")
 
     notes.write_plain(folder, "index.md", "".join(lines))
-
-
-def _write_path_index(everyone: list, folder, path: str) -> None:
-    """
-    One index per path. The reason text goes in a card below the table rather
-    than in a cell, where its length would wreck the column alignment.
-    """
-    path_en, path_ur = PATH_META[path]
-    group = [p for p in everyone if p["path"] == path]
-    if not group:
-        return
-
-    lines = [
-        f"# {path_en} — {path_ur}\n\n",
-        f"**Total: {len(group)}**\n\n",
-        PATH_INTROS.get(path, ""),
-        "| # | Name | Type | Era |\n",
-        "|---|------|------|-----|\n",
-    ]
-
-    for number, person in enumerate(group, 1):
-        type_en, _ = type_meta(person)
-        era = _truncate(person.get("era", "—"), 35)
-        lines.append(
-            f"| {number} | {_table_link(person)} | {type_en} | {era} |\n"
-        )
-
-    lines.append("\n---\n\n## Details\n\n")
-
-    for person in group:
-        lines.append(f"### [[{note_name(person)}]] — {person['name_urdu']}\n\n")
-        lines.append(f"**Era:** {person.get('era', '—')}\n\n")
-        lines.append(f"**Reason:** {person.get('path_reason', '—')}\n\n")
-
-        tags = person.get("tags", [])
-        if tags:
-            lines.append("**Tags:** " + " ".join(f"`{tag}`" for tag in tags) + "\n\n")
-
-        lines.append("---\n\n")
-
-    notes.write_plain(folder, PATH_INDEX_FILES[path], "".join(lines))

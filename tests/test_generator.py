@@ -18,7 +18,7 @@ from pathlib import Path
 import config
 import quranConnections as connections
 from tadabbur import (asma_notes, assets, audio, ayah_notes, data, explore,
-                      layout, notes, personalities, surah_index)
+                      layout, notes, personalities, surah_index, themes)
 
 
 class GlobalAyahNumbering(unittest.TestCase):
@@ -259,8 +259,7 @@ class SurahIndexNote(unittest.TestCase):
 class HomeAndSectionPages(unittest.TestCase):
     """
     The home page offers four ways in, the same four the site's left panel
-    shows; the Quran's page holds the surah cards and the themes note the
-    tables the home page used to hold.
+    shows; the Quran's page holds the surah cards.
     """
 
     def setUp(self):
@@ -269,11 +268,9 @@ class HomeAndSectionPages(unittest.TestCase):
 
         explore.write_index()
         explore.write_quran_index()
-        explore.write_themes_index()
 
         self.home = (self.vault / "index.md").read_text(encoding="utf-8")
         self.quran = (self.vault / "The Quran" / "index.md").read_text(encoding="utf-8")
-        self.themes = (self.vault / "Themes.md").read_text(encoding="utf-8")
 
     def tearDown(self):
         config.VAULT_PATH = self.original_vault
@@ -283,7 +280,7 @@ class HomeAndSectionPages(unittest.TestCase):
         self.assertEqual(cards, [("The Quran/index", "The Quran"),
                                  ("Personalities/index", "Personalities"),
                                  ("Asma Ul Husna/index", "Asma Ul Husna"),
-                                 ("Themes", "Themes")])
+                                 ("tags/index", "Themes")])
 
     def test_home_no_longer_carries_the_theme_tables(self):
         self.assertNotIn("](tags/", self.home)
@@ -293,18 +290,72 @@ class HomeAndSectionPages(unittest.TestCase):
         self.assertIn("```base\n" + explore.QURAN_BASE + "```", self.quran)
         self.assertIn('title: "The Quran"', self.quran)
 
-    def test_themes_note_holds_every_theme_by_category(self):
+    def test_no_emoji(self):
+        for page, where in ((self.home, "home page"), (self.quran, "Quran page")):
+            found = NoEmojiInGeneratedNotes.EMOJI.findall(page)
+            self.assertEqual(found, [], f"{where} contains {found}")
+
+
+class ThemesSection(unittest.TestCase):
+    """One note per theme under tags/, and one table of them all."""
+
+    def setUp(self):
+        self.vault = Path(tempfile.mkdtemp())
+        self.original_vault, config.VAULT_PATH = config.VAULT_PATH, self.vault
+        (self.vault / "tags").mkdir()
+        (self.vault / "tags" / "retired_theme.md").write_text("old", encoding="utf-8")
+        themes.generate()
+        self.page = (self.vault / "tags" / "index.md").read_text(encoding="utf-8")
+
+    def tearDown(self):
+        config.VAULT_PATH = self.original_vault
+
+    def _fields(self, key):
+        note = (self.vault / "tags" / f"{key}.md").read_text(encoding="utf-8")
+        return note.split("---")[1], note.split("---", 2)[2]
+
+    def test_every_theme_has_a_note_named_by_its_key(self):
+        """The site serves a theme at /tags/<key>, so the file name is the key."""
+        written = {note.stem for note in (self.vault / "tags").glob("*.md")}
+        self.assertEqual(written, set(connections.THEMES) | {"index"})
+
+    def test_a_note_carries_what_the_table_shows(self):
+        fields, body = self._fields("tawheed")
+        self.assertIn('\ntitle: "Tawheed"\n', fields)
+        self.assertIn('\ntheme: "[Tawheed](tags/tawheed)"\n', fields)
+        self.assertIn("\ncategory: Belief\n", fields)
+        self.assertIn("\norder: 1\n", fields)
+        self.assertIn(f"\nnotes: {themes.theme_counts()['tawheed']}\n", fields)
+        self.assertIn(connections.THEMES["tawheed"][3], body)
+
+    def test_order_runs_through_one_category_at_a_time(self):
+        """Sorted by `order`, the By Topic groups keep the order THEMES declares."""
+        orders = {}
         for key in connections.THEMES:
-            self.assertIn(f"](tags/{key})", self.themes, key)
-        categories = re.findall(r"^### (.+)$", self.themes, re.MULTILINE)
+            fields, _ = self._fields(key)
+            orders[key] = int(re.search(r"^order: (\d+)$", fields, re.MULTILINE).group(1))
+        by_order = sorted(connections.THEMES, key=orders.get)
+        self.assertEqual(by_order, list(connections.THEMES))
+        categories = list(dict.fromkeys(connections.THEMES[key][0] for key in by_order))
         self.assertEqual(categories,
                          list(dict.fromkeys(t[0] for t in connections.THEMES.values())))
 
+    def test_page_has_a_by_topic_tab_and_an_a_to_z_tab(self):
+        self.assertEqual(re.findall(r"^    name: (.+)$", self.page, re.MULTILINE),
+                         ["By Topic", "A–Z"])
+        self.assertIn("```base\n" + themes.index_base() + "```", self.page)
+        self.assertIn("title: Themes", self.page)
+
+    def test_titles_with_an_ampersand_are_quoted(self):
+        fields, _ = self._fields("rahmah")
+        self.assertIn('\ntitle: "Mercy & Forgiveness"\n', fields)
+
+    def test_a_retired_theme_loses_its_note(self):
+        self.assertFalse((self.vault / "tags" / "retired_theme.md").exists())
+
     def test_no_emoji(self):
-        for page, where in ((self.home, "home page"), (self.quran, "Quran page"),
-                            (self.themes, "themes note")):
-            found = NoEmojiInGeneratedNotes.EMOJI.findall(page)
-            self.assertEqual(found, [], f"{where} contains {found}")
+        found = NoEmojiInGeneratedNotes.EMOJI.findall(self.page)
+        self.assertEqual(found, [], f"themes page contains {found}")
 
 
 class NoEmojiInGeneratedNotes(unittest.TestCase):
@@ -566,6 +617,49 @@ class QuranCardsMatchSurahNotes(unittest.TestCase):
         self.assertNotIn("note.title", explore.QURAN_BASE)
 
 
+class PersonalitiesPage(unittest.TestCase):
+    """One table of every figure, with a tab for each path."""
+
+    def setUp(self):
+        self.folder = Path(tempfile.mkdtemp())
+        personalities._write_master_index(data.personalities, self.folder)
+        self.page = (self.folder / "index.md").read_text(encoding="utf-8")
+
+    def test_tabs_are_all_then_the_three_paths(self):
+        self.assertEqual(re.findall(r"^    name: (.+)$", self.page, re.MULTILINE),
+                         ["All", "Straight Path", "Mixed Path", "Deviated Path"])
+
+    def test_each_path_tab_filters_on_a_value_the_notes_carry(self):
+        """A tab that filters on a label no note has would be an empty tab."""
+        written = {personalities.path_meta(person)[0] for person in data.personalities}
+        filtered = re.findall(r'note\.path == "(.+)"', self.page)
+        self.assertEqual(len(filtered), 3)
+        for value in filtered:
+            self.assertIn(value, written)
+        for person in data.personalities[:5]:
+            note = personalities.build(person, data.personalities)
+            self.assertIn(f"\npath: {personalities.path_meta(person)[0]}\n", note)
+
+    def test_table_is_a_base_block(self):
+        self.assertIn("```base\n" + personalities.index_base() + "```", self.page)
+
+    def test_order_runs_through_one_type_at_a_time(self):
+        """Sorted by `order`, the table's groups come out in TYPE_META's order."""
+        order = personalities.listing_order(data.personalities)
+        self.assertEqual(sorted(order.values()), list(range(1, len(data.personalities) + 1)))
+        by_order = sorted(data.personalities, key=lambda person: order[person["id"]])
+        types = list(dict.fromkeys(person["type"] for person in by_order))
+        self.assertEqual(types, [key for key in personalities.TYPE_META if key in types])
+        prophets = [p["name_english"] for p in by_order if p["type"] == "prophet"]
+        self.assertEqual(prophets[:2], ["Adam", "Nuh (Noah)"])
+
+    def test_every_note_carries_its_order(self):
+        order = personalities.listing_order(data.personalities)
+        for person in data.personalities:
+            self.assertIn(f"\norder: {order[person['id']]}\n",
+                          personalities.build(person, data.personalities))
+
+
 class LayoutMigration(unittest.TestCase):
     """An older vault moves into the section folders with the reader's notes."""
 
@@ -593,6 +687,13 @@ class LayoutMigration(unittest.TestCase):
             self.assertFalse(explore_dir.exists())
             self.assertEqual(layout.migrate(vault), 0)
 
+    def test_removes_the_themes_note_that_stood_at_the_top_level(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            vault = Path(tmp)
+            (vault / "Themes.md").write_text("generated", encoding="utf-8")
+            layout.migrate(vault)
+            self.assertFalse((vault / "Themes.md").exists())
+
     def test_moves_the_oldest_folder_names_too(self):
         with tempfile.TemporaryDirectory() as tmp:
             vault = Path(tmp)
@@ -600,6 +701,17 @@ class LayoutMigration(unittest.TestCase):
             (vault / "2 The Cow" / "2_255.md").write_text("mine", encoding="utf-8")
             layout.migrate(vault)
             self.assertEqual((vault / "The Quran/2 - The Cow/2_255.md").read_text(), "mine")
+
+    def test_removes_the_retired_path_pages(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            vault, explore_dir = self._old_vault(tmp)
+            filtered = explore_dir / "Personalities" / "Filtered"
+            filtered.mkdir()
+            for name in personalities.RETIRED_PATH_PAGES:
+                (filtered / name).write_text("generated", encoding="utf-8")
+            layout.migrate(vault)
+            self.assertFalse((vault / "Personalities" / "Filtered").exists())
+            self.assertTrue((vault / "Personalities" / "Adam.md").exists())
 
     def test_keeps_a_base_edited_in_obsidian(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -626,9 +738,19 @@ class CanvasRelinking(unittest.TestCase):
             expected = (self.CANVAS
                         .replace("2 - The Cow البقرة/2_255: The Cow البقرة.md",
                                  "The Quran/2 - The Cow/2_255.md")
-                        .replace("0 - Explore/Personalities/", "Personalities/"))
+                        .replace("0 - Explore/Personalities/Filtered/Straight Path.md",
+                                 "Personalities/index.md"))
             self.assertEqual(path.read_text(encoding="utf-8"), expected)
             self.assertFalse(assets.relink_canvas(path))
+
+    def test_cards_on_people_follow_the_folder(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "x.canvas"
+            path.write_text('{"file":"0 - Explore/Personalities/Adam — آدَم.md"}',
+                            encoding="utf-8")
+            self.assertTrue(assets.relink_canvas(path))
+            self.assertEqual(path.read_text(encoding="utf-8"),
+                             '{"file":"Personalities/Adam — آدَم.md"}')
 
     def test_rewrites_the_top_level_folder_layouts(self):
         for old in ("2 The Cow/2_255.md", "2 - The Cow/2_255.md"):

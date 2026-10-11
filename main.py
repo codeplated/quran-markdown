@@ -3,7 +3,7 @@
 Generates the Tadabbur Obsidian vault from the dataset in data/.
 
     python main.py                 build everything
-    python main.py --only ayaat    build one part (ayaat, surahs, asma,
+    python main.py --only ayaat    build one part (ayaat, surahs, themes, asma,
                                    personalities, index, assets) — repeatable
     python main.py --vault ../Test write somewhere else, without touching .env
     python main.py --quiet         only the summary
@@ -31,7 +31,7 @@ def build(parts: set, quiet: bool) -> None:
     # Imported here so that --help and config errors are reported before the
     # dataset is read into memory.
     from tadabbur import (assets, asma_notes, ayah_notes, explore, layout,
-                          personalities, surah_index)
+                          personalities, surah_index, themes)
 
     moved = layout.migrate()
     if moved and not quiet:
@@ -42,8 +42,10 @@ def build(parts: set, quiet: bool) -> None:
     if "index" in parts:
         explore.write_index()
         explore.write_quran_index()
-        explore.write_themes_index()
-        results.append(("Home, Quran & Themes pages", None, None))
+        results.append(("Home & Quran pages", None, None))
+
+    if "themes" in parts:
+        results.append(("Themes", themes.generate(), None))
 
     if "assets" in parts:
         copied = assets.copy_vault_files() + assets.copy_thumbnails()
@@ -83,7 +85,7 @@ def build(parts: set, quiet: bool) -> None:
     print("=" * 62)
 
 
-ALL_PARTS = ("index", "assets", "ayaat", "surahs", "asma", "personalities")
+ALL_PARTS = ("index", "themes", "assets", "ayaat", "surahs", "asma", "personalities")
 
 
 def parse_args(argv=None) -> argparse.Namespace:

@@ -2,9 +2,11 @@
 Moves a vault written by an earlier version into the current layout.
 
 The vault has one top-level folder per section: The Quran/ (a folder per
-surah), Personalities/ and Asma Ul Husna/. Earlier versions put the surah
-folders at the top level and the other two under '0 - Explore'. Whole folders
-move, so every note keeps what the reader wrote below GENERATED:END.
+surah), Personalities/, Asma Ul Husna/ and tags/ (the themes). Earlier
+versions put the surah folders at the top level and Personalities and Asma Ul
+Husna under '0 - Explore'. Whole folders move, so every note keeps what the
+reader wrote below GENERATED:END. The themes folder holds only generated
+notes, so there is nothing to move into it.
 
 Runs before anything is written, whatever part of the build was asked for:
 a step that wrote into the new layout first would make the move impossible.
@@ -14,7 +16,7 @@ import shutil
 from pathlib import Path
 
 import config
-from tadabbur import data, explore
+from tadabbur import data, explore, personalities
 
 
 def _move(old: Path, new: Path) -> bool:
@@ -67,9 +69,28 @@ def _explore_folder(vault: Path) -> int:
     return moved
 
 
+def _path_pages(vault: Path) -> None:
+    """
+    Removes the Straight, Mixed and Deviated Path pages, which the tabs on the
+    Personalities page replace. They were rebuilt wholesale on every run, so
+    nothing of the reader's is in them.
+    """
+    folder = vault / config.PERSONALITIES_DIR / personalities.RETIRED_PATH_FOLDER
+    if not folder.is_dir():
+        return
+    for name in personalities.RETIRED_PATH_PAGES:
+        (folder / name).unlink(missing_ok=True)
+    if not any(folder.iterdir()):
+        folder.rmdir()
+
+
 def migrate(vault: Path | None = None) -> int:
     """Moves old folders into the current layout. Returns how many moved."""
     vault = Path(vault or config.VAULT_PATH)
     if not vault.is_dir():
         return 0
-    return _surah_folders(vault) + _explore_folder(vault)
+    moved = _surah_folders(vault) + _explore_folder(vault)
+    _path_pages(vault)
+    # The themes are a folder of notes now; this was their one page.
+    (vault / explore.RETIRED_THEMES_NOTE).unlink(missing_ok=True)
+    return moved

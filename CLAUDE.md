@@ -26,8 +26,9 @@ tadabbur-generator/
 │   ├── notes.py            ← writing notes & preserving personal sections
 │   ├── ayah_notes.py       ← the 6,236 ayah notes
 │   ├── asma_notes.py       ← the 99 Names of Allah
-│   ├── personalities.py    ← the 79 figures + their indexes
-│   ├── explore.py          ← home page (four cards), the Quran's page, the themes note
+│   ├── personalities.py    ← the 79 figures + the Personalities page (tabs by path)
+│   ├── themes.py           ← one note per theme + the Themes page (tabs By Topic / A–Z)
+│   ├── explore.py          ← home page (four cards) and the Quran's page
 │   ├── layout.py           ← moves an older vault into the section folders
 │   └── assets.py           ← thumbnails & vault_files copying
 ├── quranConnections.py     ← tag vocabulary (THEMES), retired names, related topics
@@ -137,19 +138,37 @@ folder a reader lands on therefore writes its own:
 | vault root | `explore.write_index` | the home page: what Tadabbur is, then the four cards |
 | `The Quran/` | `explore.write_quran_index` | one card per surah, as a `base` block in the page |
 | `The Quran/2 - The Cow/` | `surah_index.generate` | the surah's identity, themes, and every ayah in order |
-| `Personalities/` | `personalities._write_master_index` | the 79 figures by type |
+| `Personalities/` | `personalities._write_master_index` | one table of the 79 figures, with a tab per path |
 | `Asma Ul Husna/` | `asma_notes._write_master_index` | the 99 Names by category |
+| `tags/` | `themes.write_index` | the Themes page: one table of every theme, tabs By Topic and A–Z |
 
-`Themes.md`, at the top level, is the fourth section for now: every theme by
-category, the tables the home page used to hold, written by
-`explore.write_themes_index`.
+**Themes live in `tags/`.** The site serves a theme's page at `/tags/<key>`,
+and a note at `tags/<key>.md` becomes the top of that page, so `themes.generate`
+writes one per theme, named by its key. The folder's index note is titled
+"Themes", which is the name readers see in the left panel and breadcrumbs.
+
+**The Personalities and Themes pages are `base` blocks**, drawn in place by
+both Obsidian and the site: each view is a tab, and a table's columns sort
+when a heading is clicked. So the tabs are filters over frontmatter the notes
+already carry (`path` on a figure, `category` on a theme), and the site needs
+no code of its own for them. Two fields exist only for these tables:
+
+- `order`, on figures and themes. Rows are sorted by it, and it runs through
+  one type (or category) at a time, which is what keeps the groups in the
+  order `TYPE_META` and `THEMES` declare rather than A to Z.
+- `theme`, on themes: the name as a Markdown link to the theme's page. A table
+  can only link a row through a property, and this form sorts by name.
+
+The three path pages under `Personalities/Filtered/` are gone; the tabs
+replace them.
 
 Older vaults had the surah folders at the top level and Personalities and
 Asma Ul Husna under `0 - Explore`. `layout.migrate` moves them into place at
 the start of every run, before anything is written, whole folders at a time so
 personal sections travel with their notes. It also removes the listings the old
-layout needed (`0 - Explore/index.md`, `0 - Explore/Themes.md`) and a
-`Quran.base` nobody edited.
+layout needed (`0 - Explore/index.md`, `0 - Explore/Themes.md`, a top-level
+`Themes.md`, the pages under `Personalities/Filtered/`) and a `Quran.base`
+nobody edited.
 
 Links between these notes must use the **full vault path**,
 `[[The Quran/2 - The Cow/index|…]]`, from `data.Surah.index_path`. 114 notes
