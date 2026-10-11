@@ -71,7 +71,7 @@ what to fix.
 | [`tadabbur/asma_notes.py`](tadabbur/asma_notes.py) | the 99 Names of Allah |
 | [`tadabbur/personalities.py`](tadabbur/personalities.py) | the 79 figures and their indexes |
 | [`tadabbur/explore.py`](tadabbur/explore.py) | the home page's four cards and the Quran's page |
-| [`tadabbur/themes.py`](tadabbur/themes.py) | one note per theme, and the Themes page with its tabs |
+| [`tadabbur/themes.py`](tadabbur/themes.py) | one note per theme, and the Themes page listing them by category |
 | [`tadabbur/layout.py`](tadabbur/layout.py) | moves an older vault into the section folders |
 | [`tadabbur/assets.py`](tadabbur/assets.py) | thumbnails, hand-made vault files |
 

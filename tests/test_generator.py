@@ -297,7 +297,7 @@ class HomeAndSectionPages(unittest.TestCase):
 
 
 class ThemesSection(unittest.TestCase):
-    """One note per theme under tags/, and one table of them all."""
+    """One note per theme under tags/, and one page listing them all."""
 
     def setUp(self):
         self.vault = Path(tempfile.mkdtemp())
@@ -319,32 +319,74 @@ class ThemesSection(unittest.TestCase):
         written = {note.stem for note in (self.vault / "tags").glob("*.md")}
         self.assertEqual(written, set(connections.THEMES) | {"index"})
 
-    def test_a_note_carries_what_the_table_shows(self):
+    def test_a_note_carries_the_theme_and_its_description(self):
         fields, body = self._fields("tawheed")
         self.assertIn('\ntitle: "Tawheed"\n', fields)
-        self.assertIn('\ntheme: "[Tawheed](tags/tawheed)"\n', fields)
         self.assertIn("\ncategory: Belief\n", fields)
-        self.assertIn("\norder: 1\n", fields)
         self.assertIn(f"\nnotes: {themes.theme_counts()['tawheed']}\n", fields)
         self.assertIn(connections.THEMES["tawheed"][3], body)
 
-    def test_order_runs_through_one_category_at_a_time(self):
-        """Sorted by `order`, the By Topic groups keep the order THEMES declares."""
-        orders = {}
-        for key in connections.THEMES:
-            fields, _ = self._fields(key)
-            orders[key] = int(re.search(r"^order: (\d+)$", fields, re.MULTILINE).group(1))
-        by_order = sorted(connections.THEMES, key=orders.get)
-        self.assertEqual(by_order, list(connections.THEMES))
-        categories = list(dict.fromkeys(connections.THEMES[key][0] for key in by_order))
-        self.assertEqual(categories,
-                         list(dict.fromkeys(t[0] for t in connections.THEMES.values())))
+    def test_a_note_has_no_fields_left_from_the_old_table(self):
+        """`theme` and `order` only fed the table the Themes page used to be."""
+        fields, _ = self._fields("tawheed")
+        self.assertNotRegex(fields, r"(?m)^(theme|order):")
 
-    def test_page_has_a_by_topic_tab_and_an_a_to_z_tab(self):
-        self.assertEqual(re.findall(r"^    name: (.+)$", self.page, re.MULTILINE),
-                         ["By Topic", "A–Z"])
-        self.assertIn("```base\n" + themes.index_base() + "```", self.page)
+    def _sections(self):
+        """The page's categories in order, each with its lines."""
+        sections, current = {}, None
+        for line in self.page.splitlines():
+            if line.startswith("## "):
+                current = sections.setdefault(line[3:], [])
+            elif line.startswith("- ") and current is not None:
+                current.append(line)
+        return sections
+
+    def test_page_lists_every_theme_once_under_its_category_in_order(self):
+        """The order THEMES declares is the curated one, for categories and themes."""
+        expected = {}
+        for key, theme in connections.THEMES.items():
+            expected.setdefault(theme[0], []).append(key)
+        listed = {
+            category: [re.match(r"- \[\[tags/([^|]+)\|", line).group(1) for line in lines]
+            for category, lines in self._sections().items()
+        }
+        self.assertEqual(list(listed), list(expected))
+        self.assertEqual(listed, expected)
+
+    def test_a_line_carries_name_urdu_count_and_description(self):
+        category, title, urdu, description = connections.THEMES["tawheed"]
+        ayaat = themes.ayah_counts()["tawheed"]
+        self.assertIn(
+            f"- [[tags/tawheed|{title}]] "
+            f'<span lang="ur">{urdu}</span> '
+            f'<span class="count">{ayaat} <span class="unit">ayaat</span></span> '
+            f"<small>{description}</small>",
+            self._sections()[category],
+        )
+
+    def test_the_count_is_ayaat_only(self):
+        """Personality and Name notes carry themes too, and are not ayaat."""
+        ayaat, everything = themes.ayah_counts(), themes.theme_counts()
+        self.assertTrue(all(ayaat[key] <= everything[key] for key in ayaat))
+        self.assertEqual(
+            ayaat["tawheed"],
+            sum("tawheed" in tags for tags in connections.AYAH_TAGS.values()),
+        )
+
+    def test_one_ayah_is_not_called_ayaat(self):
+        self.assertIn('1 <span class="unit">ayah</span>', themes.index_line("tawheed", 1))
+
+    def test_every_line_leads_with_latin_text(self):
+        """A line that opens with Urdu would be laid out right to left."""
+        for lines in self._sections().values():
+            for line in lines:
+                self.assertRegex(line, r"^- \[\[tags/[a-z_0-9]+\|")
+
+    def test_page_is_plain_lists_marked_for_the_site(self):
         self.assertIn("title: Themes", self.page)
+        self.assertIn("cssclasses: [themes-index]", self.page)
+        self.assertNotIn("```base", self.page)
+        self.assertIn(themes.COUNTS_NOTE, self.page)
 
     def test_titles_with_an_ampersand_are_quoted(self):
         fields, _ = self._fields("rahmah")

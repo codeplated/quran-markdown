@@ -27,7 +27,7 @@ tadabbur-generator/
 │   ├── ayah_notes.py       ← the 6,236 ayah notes
 │   ├── asma_notes.py       ← the 99 Names of Allah
 │   ├── personalities.py    ← the 79 figures + the Personalities page (tabs by path)
-│   ├── themes.py           ← one note per theme + the Themes page (tabs By Topic / A–Z)
+│   ├── themes.py           ← one note per theme + the Themes page (every theme by category)
 │   ├── explore.py          ← home page (four cards) and the Quran's page
 │   ├── layout.py           ← moves an older vault into the section folders
 │   └── assets.py           ← thumbnails & vault_files copying
@@ -140,24 +140,44 @@ folder a reader lands on therefore writes its own:
 | `The Quran/2 - The Cow/` | `surah_index.generate` | the surah's identity, themes, and every ayah in order |
 | `Personalities/` | `personalities._write_master_index` | one table of the 79 figures, with a tab per path |
 | `Asma Ul Husna/` | `asma_notes._write_master_index` | the 99 Names by category |
-| `tags/` | `themes.write_index` | the Themes page: one table of every theme, tabs By Topic and A–Z |
+| `tags/` | `themes.write_index` | the Themes page: every theme under its category, as headings and lists |
 
 **Themes live in `tags/`.** The site serves a theme's page at `/tags/<key>`,
 and a note at `tags/<key>.md` becomes the top of that page, so `themes.generate`
 writes one per theme, named by its key. The folder's index note is titled
 "Themes", which is the name readers see in the left panel and breadcrumbs.
 
-**The Personalities and Themes pages are `base` blocks**, drawn in place by
-both Obsidian and the site: each view is a tab, and a table's columns sort
-when a heading is clicked. So the tabs are filters over frontmatter the notes
-already carry (`path` on a figure, `category` on a theme), and the site needs
-no code of its own for them. Two fields exist only for these tables:
+**The Personalities page is a `base` block**, drawn in place by both Obsidian
+and the site: each view is a tab, and the table's columns sort when a heading
+is clicked. So the tabs are filters over a field the notes already carry
+(`path`), and the site needs no code of its own for them. One field exists only
+for this table: `order`, on figures. Rows are sorted by it, and it runs through
+one type at a time, which keeps the groups in the order `TYPE_META` declares
+rather than A to Z.
 
-- `order`, on figures and themes. Rows are sorted by it, and it runs through
-  one type (or category) at a time, which is what keeps the groups in the
-  order `TYPE_META` and `THEMES` declare rather than A to Z.
-- `theme`, on themes: the name as a Markdown link to the theme's page. A table
-  can only link a row through a property, and this form sorts by name.
+**The Themes page is plain headings and lists**: a heading per category, in the
+order `THEMES` declares, and under it one line per theme. A line is the theme's
+name as a link, then its Urdu name, its ayah count and its description, each in
+an element of its own:
+
+```
+- [[tags/tawheed|Tawheed]] <span lang="ur">توحید</span> <span class="count">381 <span class="unit">ayaat</span></span> <small>Oneness of Allah…</small>
+```
+
+It reads as it is in Obsidian and with scripts off. The site lays the lines out
+in columns and adds a filter and other arrangements from what each line holds,
+so the elements and their order are a contract with the site (its `CLAUDE.md`
+lists it). Three things about the line are deliberate:
+
+- It leads with the Latin name. A line that opens with Urdu is laid out right
+  to left.
+- The Urdu is marked `lang="ur"` here. The site otherwise guesses the language
+  from the letters, and a word like نفاق has none that only Urdu uses.
+- The count is ayaat only (`themes.ayah_counts`). A theme note's own `notes`
+  field also counts the personality and Name notes that carry the theme.
+
+The page was a `base` table until 2026-10-11; the `theme` and `order` fields
+that fed it are no longer written on theme notes.
 
 The three path pages under `Personalities/Filtered/` are gone; the tabs
 replace them.

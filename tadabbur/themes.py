@@ -4,9 +4,11 @@ The Themes section: one note per theme, and the page that lists them.
 A theme is a tag, and the site serves a tag's page at /tags/<key>: every ayah
 that carries it. A note at tags/<key>.md becomes the top of that page, so each
 theme gets one, holding its name, Urdu name, category, count and description.
-Those fields are also what the Themes page reads: tags/index.md holds one
-table of every theme, with a tab that groups them by topic and a tab that
-lists them A–Z.
+
+tags/index.md is the Themes page: every theme under its category, as plain
+headings and lists. It reads as it is, in Obsidian and with scripts off; the
+site lays the lists out in columns and adds a filter and other arrangements
+(A to Z, most ayaat) on top, from what each line already carries.
 
 The folder is called `tags` because that is the address the site serves
 themes at; the title of its index note is what a reader sees, "Themes".
@@ -16,8 +18,10 @@ import config
 import quranConnections as connections
 from tadabbur import data, notes
 
-COUNTS_NOTE = ("*Notes* is the number of notes that carry a theme: the ayaat, "
-               "plus any personality or Name of Allah notes that share it.")
+# The class the site's styling and script look for on the Themes page.
+INDEX_CLASS = "themes-index"
+
+COUNTS_NOTE = "The number beside a theme is how many ayaat carry it."
 
 
 def theme_counts() -> dict:
@@ -38,84 +42,78 @@ def theme_counts() -> dict:
     return counts
 
 
-def build(key: str, order: int, count: int) -> str:
-    """
-    One theme's note: the fields the Themes table shows, then its description,
-    which the site puts above the theme's ayaat.
+def ayah_counts() -> dict:
+    """How many ayaat carry each theme. This is the count the Themes page shows."""
+    counts = {key: 0 for key in connections.THEMES}
 
-    `theme` is the name as a link to the theme's own page. A table can only
-    link a row through a property, and written this way the column also sorts
-    by name rather than by key. `order` is the theme's place in THEMES, which
-    keeps the By Topic tab in the order the categories are declared.
+    for tags in connections.AYAH_TAGS.values():
+        for tag in tags:
+            if tag in counts:
+                counts[tag] += 1
+
+    return counts
+
+
+def build(key: str, count: int) -> str:
+    """
+    One theme's note: its fields, then its description, which the site puts
+    above the theme's ayaat.
     """
     category, title, urdu, description = connections.THEMES[key]
 
     head = notes.frontmatter({
         "title": notes.quote(title),
-        "theme": notes.quote(f"[{title}]({config.THEMES_DIR}/{key})"),
         "urdu": notes.quote(urdu),
         "category": category,
         "notes": count,
-        "order": order,
         "description": notes.quote(description),
     })
     return f"{head}{description}.\n"
 
 
-def index_base() -> str:
+def index_line(key: str, ayaat: int) -> str:
     """
-    The table on the Themes page, as a `base` block with two views.
+    One theme on the Themes page: its name as a link, then its Urdu name, its
+    ayah count and its description.
 
-    By Topic sorts by `order`, which runs through one category at a time, so
-    the groups come out in the order THEMES declares them rather than A to Z.
-    Only theme notes carry `theme`, which is what picks them out.
+    The line leads with the Latin name so it reads left to right. The Urdu is
+    marked as Urdu here, at the source: the site would otherwise have to guess
+    the language from the letters, and a word like نفاق has none that only
+    Urdu uses. Each part is in its own element so the site can lay them out,
+    filter on them and sort by the count.
     """
+    _, title, urdu, description = connections.THEMES[key]
+    unit = "ayah" if ayaat == 1 else "ayaat"
+
     return (
-        "filters:\n"
-        "  and:\n"
-        '    - file.hasProperty("theme")\n'
-        "properties:\n"
-        "  note.theme:\n"
-        "    displayName: Theme\n"
-        "  note.urdu:\n"
-        "    displayName: Urdu\n"
-        "views:\n"
-        "  - type: table\n"
-        "    name: By Topic\n"
-        "    groupBy:\n"
-        "      property: note.category\n"
-        "      direction: ASC\n"
-        "    order:\n"
-        "      - note.theme\n"
-        "      - note.urdu\n"
-        "      - note.notes\n"
-        "      - note.description\n"
-        "    sort:\n"
-        "      - property: note.order\n"
-        "        direction: ASC\n"
-        "  - type: table\n"
-        "    name: A–Z\n"
-        "    order:\n"
-        "      - note.theme\n"
-        "      - note.urdu\n"
-        "      - note.category\n"
-        "      - note.notes\n"
-        "      - note.description\n"
-        "    sort:\n"
-        "      - property: note.title\n"
-        "        direction: ASC\n"
+        f"- [[{config.THEMES_DIR}/{key}|{title}]] "
+        f'<span lang="ur">{urdu}</span> '
+        f'<span class="count">{ayaat} <span class="unit">{unit}</span></span> '
+        f"<small>{description}</small>"
+    )
+
+
+def index_body() -> str:
+    """Every theme under a heading for its category, in the order THEMES declares."""
+    ayaat = ayah_counts()
+    sections = {}
+    for key, theme in connections.THEMES.items():
+        sections.setdefault(theme[0], []).append(index_line(key, ayaat[key]))
+
+    return "\n\n".join(
+        f"## {category}\n\n" + "\n".join(lines)
+        for category, lines in sections.items()
     )
 
 
 def write_index() -> None:
-    """The Themes page: every theme in one table, by topic or A–Z."""
+    """The Themes page: every theme, by category."""
     categories = len({theme[0] for theme in connections.THEMES.values()})
     body = (
-        notes.frontmatter({"title": "Themes"})
+        notes.frontmatter({"title": "Themes", "cssclasses": f"[{INDEX_CLASS}]"})
         + f"The {len(connections.THEMES)} themes of the Quran, in {categories} "
-        "categories. See them by topic or A–Z, or click a column heading to sort "
-        "by it. Open a theme for every ayah that carries it.\n\n"
-        + f"```base\n{index_base()}```\n\n"
+        "categories. Open a theme for every ayah that carries it.\n\n"
+        + index_body() + "\n\n"
         + COUNTS_NOTE + "\n"
     )
     notes.write_plain(config.VAULT_PATH / config.THEMES_DIR, "index.md", body)
@@ -126,10 +124,10 @@ def generate() -> int:
     counts = theme_counts()
     folder = config.VAULT_PATH / config.THEMES_DIR
 
-    for order, key in enumerate(connections.THEMES, 1):
-        notes.write_plain(folder, f"{key}.md", build(key, order, counts[key]))
+    for key in connections.THEMES:
+        notes.write_plain(folder, f"{key}.md", build(key, counts[key]))
 
-    # A theme retired from THEMES would otherwise keep its row in the table.
+    # A theme retired from THEMES would otherwise keep its note and its page.
     current = {f"{key}.md" for key in connections.THEMES} | {"index.md"}
     for note in folder.glob("*.md"):
         if note.name not in current:
