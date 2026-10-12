@@ -28,7 +28,7 @@ tadabbur-generator/
 │   ├── asma_notes.py       ← the 99 Names of Allah + the Asma Ul Husna page (every Name by category)
 │   ├── personalities.py    ← the 79 figures + the Personalities page (every figure by type)
 │   ├── themes.py           ← one note per theme + the Themes page (every theme by category)
-│   ├── explore.py          ← home page (four cards) and the Quran's page
+│   ├── explore.py          ← home page (four cards, three entries in each) and the Quran's page
 │   ├── layout.py           ← moves an older vault into the section folders
 │   └── assets.py           ← thumbnails & vault_files copying
 ├── quranConnections.py     ← tag vocabulary (THEMES), retired names, related topics
@@ -127,7 +127,7 @@ The vault has four sections: **The Quran, Personalities, Asma Ul Husna,
 Themes**. The home page offers them as four cards, in that order, and the
 site's left panel shows the same four as its parents, so the top-level folder
 names here are the site's navigation. The site's menu takes its sections from
-these folders and their order from the home page's four links; it names no
+these folders and their order from the home page's links to them; it names no
 folder itself.
 
 A folder with no `index.md` gets whatever the site invents for it: a file list
@@ -136,7 +136,7 @@ folder a reader lands on therefore writes its own:
 
 | Folder | Written by | Holds |
 |---|---|---|
-| vault root | `explore.write_index` | the home page: what Tadabbur is, then the four cards |
+| vault root | `explore.write_index` | the home page: one line on what the site is, the four cards, then what Tadabbur means. A card says what its section holds and how its page can be arranged, then lists three entries from it with their counts. The entries are named in `explore.py` (`THEME_EXAMPLES` …); the counts are computed. The arrangements a card names are the ones the site's listing script offers, so the two change together |
 | `The Quran/` | `explore.write_quran_index` | one card per surah, as a `base` block in the page |
 | `The Quran/2 - The Cow/` | `surah_index.generate` | the surah's identity, themes, and every ayah in order |
 | `Personalities/` | `personalities._write_master_index` | the Personalities page: every figure under its type, as headings and lists |

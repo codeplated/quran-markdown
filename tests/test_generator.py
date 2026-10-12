@@ -283,6 +283,43 @@ class HomeAndSectionPages(unittest.TestCase):
                                  ("Asma Ul Husna/index", "Asma Ul Husna"),
                                  ("tags/index", "Themes")])
 
+    def test_cards_come_before_the_meaning_of_the_word(self):
+        self.assertLess(self.home.index("[[tags/index|Themes]]"),
+                        self.home.index("**Tadabbur**"))
+
+    def test_each_card_shows_three_entries_of_its_section(self):
+        cards = re.split(r"^(?=- \[\[)", self.home, flags=re.MULTILINE)[1:]
+        self.assertEqual(len(cards), 4)
+        for card in cards:
+            entries = re.findall(r"^    - \[\[[^|\]]+\|[^\]]+\]\] <span class=\"count\">",
+                                 card, re.MULTILINE)
+            self.assertEqual(len(entries), 3, card)
+
+    def test_an_entry_says_the_number_its_own_page_says(self):
+        ayaat = themes.ayah_counts()
+        for key in explore.THEME_EXAMPLES:
+            title = connections.THEMES[key][1]
+            self.assertIn(f"[[tags/{key}|{title}]] "
+                          f'<span class="count">{ayaat[key]:,} <span class="unit">ayaat</span>',
+                          self.home)
+        people = {person["id"]: person for person in data.personalities}
+        for key in explore.PERSON_EXAMPLES:
+            person = people[key]
+            self.assertIn(f"[[{personalities.note_name(person)}|{person['name_english']}]] "
+                          f'<span class="count">{personalities.ayah_count(person):,} ',
+                          self.home)
+        names = {name["transliteration"]: name for name in data.asma_ul_husna}
+        for key in explore.NAME_EXAMPLES:
+            self.assertIn(f"[[{asma_notes.note_name(names[key])}|{key}]] "
+                          f'<span class="count">{names[key]["quran_occurrences"]:,} ',
+                          self.home)
+
+    def test_home_prose_has_no_em_dash(self):
+        # A person's note is named "Musa (Moses) — مُوسَى"; that is a link's
+        # target, not prose.
+        prose = re.sub(r"\[\[[^|\]]+\|", "[[", self.home)
+        self.assertNotIn("—", prose)
+
     def test_home_no_longer_carries_the_theme_tables(self):
         self.assertNotIn("](tags/", self.home)
         self.assertNotIn("| Topic |", self.home)
