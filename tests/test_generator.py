@@ -829,6 +829,12 @@ class PersonalitiesPage(unittest.TestCase):
                          r'<small><span class="path" data-rank="1">Straight Path</span> · '
                          r'Beginning of humanity · <span lang="ur">[^<]+</span></small>$')
 
+    def test_no_era_has_an_em_dash(self):
+        """An era is shown in the details and in a person's head; a figure's
+        own name ("Adam — آدَم") is the only dash a line may carry."""
+        for person in data.personalities:
+            self.assertNotIn("—", person.get("era", ""), person["id"])
+
     def test_paths_carry_their_place_among_the_paths(self):
         """The site shows the paths in this order: straight, mixed, deviated."""
         ranks = dict(re.findall(r'data-rank="(\d)">([^<]+)<', self.page))
