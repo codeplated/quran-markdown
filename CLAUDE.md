@@ -25,8 +25,8 @@ tadabbur-generator/
 │   ├── audio.py            ← audio embeds + global ayah numbering
 │   ├── notes.py            ← writing notes & preserving personal sections
 │   ├── ayah_notes.py       ← the 6,236 ayah notes
-│   ├── asma_notes.py       ← the 99 Names of Allah
-│   ├── personalities.py    ← the 79 figures + the Personalities page (tabs by path)
+│   ├── asma_notes.py       ← the 99 Names of Allah + the Asma Ul Husna page (every Name by category)
+│   ├── personalities.py    ← the 79 figures + the Personalities page (every figure by type)
 │   ├── themes.py           ← one note per theme + the Themes page (every theme by category)
 │   ├── explore.py          ← home page (four cards) and the Quran's page
 │   ├── layout.py           ← moves an older vault into the section folders
@@ -126,8 +126,9 @@ python tag_audit.py                          # validate every tag
 The vault has four sections: **The Quran, Personalities, Asma Ul Husna,
 Themes**. The home page offers them as four cards, in that order, and the
 site's left panel shows the same four as its parents, so the top-level folder
-names here are the site's navigation. The site orders them by slug in its
-`quartz.config.yaml`; rename a section and that list has to follow.
+names here are the site's navigation. The site's menu takes its sections from
+these folders and their order from the home page's four links; it names no
+folder itself.
 
 A folder with no `index.md` gets whatever the site invents for it: a file list
 sorted as text (2_1, 2_10, 2_100 …) that says nothing about the folder. Every
@@ -138,8 +139,8 @@ folder a reader lands on therefore writes its own:
 | vault root | `explore.write_index` | the home page: what Tadabbur is, then the four cards |
 | `The Quran/` | `explore.write_quran_index` | one card per surah, as a `base` block in the page |
 | `The Quran/2 - The Cow/` | `surah_index.generate` | the surah's identity, themes, and every ayah in order |
-| `Personalities/` | `personalities._write_master_index` | one table of the 79 figures, with a tab per path |
-| `Asma Ul Husna/` | `asma_notes._write_master_index` | the 99 Names by category |
+| `Personalities/` | `personalities._write_master_index` | the Personalities page: every figure under its type, as headings and lists |
+| `Asma Ul Husna/` | `asma_notes._write_master_index` | the Asma Ul Husna page: every Name under its category, as headings and lists |
 | `tags/` | `themes.write_index` | the Themes page: every theme under its category, as headings and lists |
 
 **Themes live in `tags/`.** The site serves a theme's page at `/tags/<key>`,
@@ -147,40 +148,72 @@ and a note at `tags/<key>.md` becomes the top of that page, so `themes.generate`
 writes one per theme, named by its key. The folder's index note is titled
 "Themes", which is the name readers see in the left panel and breadcrumbs.
 
-**The Personalities page is a `base` block**, drawn in place by both Obsidian
-and the site: each view is a tab, and the table's columns sort when a heading
-is clicked. So the tabs are filters over a field the notes already carry
-(`path`), and the site needs no code of its own for them. One field exists only
-for this table: `order`, on figures. Rows are sorted by it, and it runs through
-one type at a time, which keeps the groups in the order `TYPE_META` declares
-rather than A to Z.
-
-**The Themes page is plain headings and lists**: a heading per category, in the
-order `THEMES` declares, and under it one line per theme. A line is the theme's
-name as a link, then its Urdu name, its ayah count and its description, each in
-an element of its own:
+**The three listing pages are plain headings and lists**, written one way:
+Themes, Personalities and Asma Ul Husna. Each has a heading per group and under
+it one line per entry. A line is the entry's name as a link, then its name in
+Urdu or Arabic, a count and some details, each in an element of its own:
 
 ```
 - [[tags/tawheed|Tawheed]] <span lang="ur">توحید</span> <span class="count">381 <span class="unit">ayaat</span></span> <small>Oneness of Allah…</small>
+- [[Adam — آدَم|Adam]] <span lang="ar">آدَم</span> <span class="count">21 <span class="unit">ayaat</span></span> <small><span class="path" data-rank="1">Straight Path</span> · Beginning of humanity · <span lang="ur">آدم علیہ السلام</span></small>
+- <span class="num">2</span> [[2 - Ar-Rahman ٱلرَّحْمَـٰن|Ar-Rahman]] <span lang="ar">ٱلرَّحْمَـٰن</span> <span class="count">57 <span class="unit">times</span></span> <small>The Most Gracious · <span lang="ur">بے حد رحم کرنے والا</span> · <span class="root">root <span lang="ar">ر-ح-م</span></span></small>
 ```
 
-It reads as it is in Obsidian and with scripts off. The site lays the lines out
-in columns and adds a filter and other arrangements from what each line holds,
-so the elements and their order are a contract with the site (its `CLAUDE.md`
-lists it). Three things about the line are deliberate:
+| Page | Groups, in order | Count | Details |
+|---|---|---|---|
+| Themes | categories, as `THEMES` declares them | ayaat that carry the theme | description |
+| Personalities | types, as `TYPE_META` declares them (`TYPE_HEADINGS` names them) | ayaat the note lists; none when it lists none | path, era, Urdu name |
+| Asma Ul Husna | categories, as `CATEGORY_ORDER` declares them, without their "Names of " | times in the Quran; none when not in this form | meaning in English and Urdu, root |
+
+Each page carries `cssclasses: [index-page, X]` (`notes.index_classes`), X being
+`themes-index`, `people-index` or `names-index`.
+
+A page reads as it is in Obsidian and with scripts off. The site lays the lines
+out in columns and adds a filter and other arrangements from what each line
+holds, so the elements and their order are a contract with the site (its
+`CLAUDE.md` lists it). These things about a line are deliberate:
 
 - It leads with the Latin name. A line that opens with Urdu is laid out right
   to left.
-- The Urdu is marked `lang="ur"` here. The site otherwise guesses the language
-  from the letters, and a word like نفاق has none that only Urdu uses.
-- The count is ayaat only (`themes.ayah_counts`). A theme note's own `notes`
-  field also counts the personality and Name notes that carry the theme.
+- Urdu and Arabic are marked (`lang="ur"`, `lang="ar"`) here. The site
+  otherwise guesses the language from the letters, and a word like نفاق has
+  none that only Urdu uses. A Name with two roots marks each, since the "and"
+  between them is English.
+- A person's path carries `data-rank`, its place among the paths. The site's
+  "By Path" arrangement groups by the path's text and orders by that number.
+- A Name's line begins with its number, which the site sorts "1–99" by.
+- Parts of the details are separated by " · ", so a Name's several meanings are
+  joined with commas there.
+- A theme's count is ayaat only (`themes.ayah_counts`). A theme note's own
+  `notes` field also counts the personality and Name notes that carry the theme.
 
-The page was a `base` table until 2026-10-11; the `theme` and `order` fields
-that fed it are no longer written on theme notes.
+Themes was a `base` table until 2026-10-11; the `theme` and `order` fields that
+fed it are no longer written on theme notes. Personalities was a `base` table
+with a tab per path, and Asma Ul Husna ten markdown tables, until 2026-10-12;
+the `order` field that sorted the first is no longer written on figures.
 
-The three path pages under `Personalities/Filtered/` are gone; the tabs
-replace them.
+The three path pages under `Personalities/Filtered/` are gone; the "By Path"
+arrangement replaces them.
+
+**A person's note and a Name's note say their fields under their heading.**
+After the `# heading` comes a line or two (a person's name in Urdu; a Name's
+meaning in English, then in Urdu), then a quote block:
+
+```
+> [[Personalities/index#Prophets and Messengers|Prophet / Messenger]] · Straight Path · Beginning of humanity · [[#Mentioned in Quran|21 ayaat]]
+>
+> **Also known as:** The First Human, Abu al-Bashar, Khalifah
+>
+> **Themes:** [[tags/story_adam|Prophet Adam]] · [[tags/prophethood|Prophethood]] · …
+```
+
+The type (or a Name's category) links to its heading on the listing page, so
+those headings and these links have to agree; a test checks every one. Themes
+are links by name (`notes.theme_links`), not tag keys. Both kinds of note carry
+`cssclasses: [profile]`, which tells the site to leave out its own title,
+properties box, reading time and tag chips: the note already says all four.
+The lines under the heading used to be `###` and `####` headings, which gave
+the page an outline that jumped from level 1 to 3.
 
 Older vaults had the surah folders at the top level and Personalities and
 Asma Ul Husna under `0 - Explore`. `layout.migrate` moves them into place at

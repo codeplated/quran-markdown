@@ -18,7 +18,8 @@ import config
 import quranConnections as connections
 from tadabbur import data, notes
 
-# The class the site's styling and script look for on the Themes page.
+# The class that says which listing this is; notes.INDEX_PAGE_CLASS says it is
+# one. The site's styling and script look for both.
 INDEX_CLASS = "themes-index"
 
 COUNTS_NOTE = "The number beside a theme is how many ayaat carry it."
@@ -83,12 +84,10 @@ def index_line(key: str, ayaat: int) -> str:
     filter on them and sort by the count.
     """
     _, title, urdu, description = connections.THEMES[key]
-    unit = "ayah" if ayaat == 1 else "ayaat"
-
     return (
         f"- [[{config.THEMES_DIR}/{key}|{title}]] "
         f'<span lang="ur">{urdu}</span> '
-        f'<span class="count">{ayaat} <span class="unit">{unit}</span></span> '
+        f'{notes.index_count(ayaat, "ayah", "ayaat")} '
         f"<small>{description}</small>"
     )
 
@@ -110,7 +109,8 @@ def write_index() -> None:
     """The Themes page: every theme, by category."""
     categories = len({theme[0] for theme in connections.THEMES.values()})
     body = (
-        notes.frontmatter({"title": "Themes", "cssclasses": f"[{INDEX_CLASS}]"})
+        notes.frontmatter({"title": "Themes",
+                           "cssclasses": notes.index_classes(INDEX_CLASS)})
         + f"The {len(connections.THEMES)} themes of the Quran, in {categories} "
         "categories. Open a theme for every ayah that carries it.\n\n"
         + index_body() + "\n\n"

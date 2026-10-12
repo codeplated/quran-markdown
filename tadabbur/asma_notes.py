@@ -10,12 +10,31 @@ its root and category, then the explanations. The data file keeps english,
 arabic, urdu, transliteration and root apart, so the note keeps them apart
 too — they used to be joined into a single `name` frontmatter string, which
 the site could only print back as one long bidirectional line.
+
+The Asma Ul Husna page is written the way the Themes page is: every Name as a
+line in a plain list under its category's heading. It reads as it is, in
+Obsidian and with scripts off; the site lays the lists out in columns and adds
+a filter and other arrangements (1 to 99, A to Z, most in the Quran) from what
+each line already carries.
 """
 
 import json
 
 import config
+import quranConnections as connections
 from tadabbur import data, notes
+
+# The class that says which listing this is; notes.INDEX_PAGE_CLASS says it is
+# one. The site's styling and script look for both.
+INDEX_CLASS = "names-index"
+
+COUNTS_NOTE = ("The number at the end of a line is how many times the Name "
+               "appears in the Quran in this form. A Name with no number does "
+               "not appear in this form.")
+
+# Every category in the data begins with this. On a page of Names it is said
+# once, by the page; a heading there keeps only what follows.
+CATEGORY_PREFIX = "Names of "
 
 # Reading order for the folder index: what Allah is in Himself, then how He
 # governs, creates, knows, forgives, provides, judges, protects — ending with
@@ -49,12 +68,12 @@ def note_name(name: dict) -> str:
     return f"{name['number']} - {name['transliteration']} {name['arabic']}"
 
 
-def _table_link(name: dict) -> str:
-    """
-    A wikilink safe inside a table cell: the pipe in [[file|alias]] has to be
-    escaped, or the parser reads it as a column break.
-    """
-    return f"[[{note_name(name)}\\|{name['transliteration']} {name['arabic']}]]"
+def category_heading(category: str) -> str:
+    """A category as a heading on the Asma Ul Husna page: 'Forgiveness & Mercy'."""
+    if not category.startswith(CATEGORY_PREFIX):
+        return category
+    rest = category[len(CATEGORY_PREFIX):]
+    return rest[:1].upper() + rest[1:]
 
 
 def _meanings(value: str, separator: str = " · ") -> str:
@@ -112,6 +131,24 @@ def build(name: dict, everyone: list) -> str:
         f"- [[{note_name(other)}]]" for other in related(name, everyone)
     )
 
+    themes = notes.theme_links(name.get("tags", []), connections.THEMES,
+                               config.THEMES_DIR)
+
+    # What the Name is, in a few lines: its place among the Names, its category
+    # as a link to it on the Asma Ul Husna page, how often it appears, its
+    # root, and its themes by name. The site used to draw a properties box
+    # here, with the fields under their raw names (`root_meaning`,
+    # `quran_occurrences`) and the tags as keys.
+    summary = [
+        f"Name {name['number']} of {len(everyone)} · "
+        f"[[{config.ASMA_DIR}/index#{category_heading(name['category'])}|{name['category']}]] · "
+        f"In the Quran: {_occurrences(name['quran_occurrences'])}",
+        f"**Root:** {name['root']} · {name['root_meaning']}",
+    ]
+    if themes:
+        summary.append(f"**Themes:** {themes}")
+    summary = "\n>\n".join(f"> {line}" for line in summary)
+
     head = notes.frontmatter({
         "number": name["number"],
         "english": notes.quote(_meanings(name["english"], ", ")),
@@ -123,15 +160,16 @@ def build(name: dict, everyone: list) -> str:
         "category": notes.quote(name["category"]),
         "quran_occurrences": name["quran_occurrences"],
         "tags": json.dumps(name.get("tags", [])),
+        "cssclasses": f"[{notes.PROFILE_CLASS}]",
     })
 
     body = f"""# {name['transliteration']} — {name['arabic']}
-### {_meanings(name['english'])}
-#### {_meanings(name['urdu'])}
 
-> **Root:** {name['root']} — {name['root_meaning']}
->
-> **Category:** {name['category']} · **In the Quran:** {_occurrences(name['quran_occurrences'])}
+**{_meanings(name['english'])}**
+
+{_meanings(name['urdu'], "، ")}
+
+{summary}
 
 ---
 
@@ -178,38 +216,69 @@ def _categories(everyone: list) -> list:
     return known + sorted(present - set(known))
 
 
-def _write_master_index(everyone: list, folder) -> None:
+def index_line(name: dict) -> str:
     """
-    The folder's own page, grouped by category.
+    One Name on the Asma Ul Husna page: its number, the Name as a link, the
+    Name in Arabic, how many times it appears in the Quran, and in the details
+    its meaning in English and Urdu and its root.
 
-    Without an index.md the site falls back to listing the folder, which sorts
-    the notes as text — 1, 10, 11, … 2 — and says nothing about any of them.
+    Each part is in its own element so the site can lay them out, filter on
+    them and sort by the number or the count. Arabic and Urdu are marked here,
+    at the source: the two share most of their letters, so the site could only
+    guess, and a meaning like صمد has no letter only Urdu uses.
     """
-    lines = [
-        f"# Asma ul Husna — The 99 Names\n\n",
-        f"**Total: {len(everyone)}**\n\n",
-        "The Names in their traditional order, grouped by what they tell us. "
-        "Each links to its own note: the meaning in English and Urdu, the root "
-        "it grows from, and the ayaat it appears in.\n\n",
-    ]
+    count = name["quran_occurrences"]
+    # A Name with two roots joins them with "and", which is not Arabic.
+    roots = " and ".join(
+        f'<span lang="ar">{root}</span>' for root in name["root"].split(" and ")
+    )
+    details = " · ".join((
+        _meanings(name["english"], ", "),
+        f'<span lang="ur">{_meanings(name["urdu"], "، ")}</span>',
+        f'<span class="root">root {roots}</span>',
+    ))
 
+    return " ".join(part for part in (
+        f'- <span class="num">{name["number"]}</span>',
+        f"[[{note_name(name)}|{name['transliteration']}]]",
+        f'<span lang="ar">{name["arabic"]}</span>',
+        notes.index_count(count, "time", "times") if count else "",
+        f"<small>{details}</small>",
+    ) if part)
+
+
+def index_body(everyone: list) -> str:
+    """Every Name under a heading for its category, in traditional order."""
+    sections = []
     for category in _categories(everyone):
         group = sorted(
             (name for name in everyone if name["category"] == category),
             key=lambda name: name["number"],
         )
+        sections.append(
+            f"## {category_heading(category)}\n\n"
+            + "\n".join(index_line(name) for name in group)
+        )
+    return "\n\n".join(sections)
 
-        lines.append(f"\n## {category} — {len(group)}\n\n")
-        lines.append("| # | Name | Meaning | Root |\n")
-        lines.append("|---|------|---------|------|\n")
 
-        for name in group:
-            lines.append(
-                f"| {name['number']} | {_table_link(name)} "
-                f"| {_meanings(name['english'])} | {name['root']} |\n"
-            )
+def _write_master_index(everyone: list, folder) -> None:
+    """
+    The folder's own page: every Name, by category.
 
-    notes.write_plain(folder, "index.md", "".join(lines))
+    Without an index.md the site falls back to listing the folder, which sorts
+    the notes as text — 1, 10, 11, … 2 — and says nothing about any of them.
+    """
+    body = (
+        notes.frontmatter({"title": config.ASMA_DIR,
+                           "cssclasses": notes.index_classes(INDEX_CLASS)})
+        + f"The {len(everyone)} Names of Allah, grouped by what they tell us. "
+        "Open a Name for its meaning in English and Urdu, the root it grows "
+        "from and the ayaat it appears in.\n\n"
+        + index_body(everyone) + "\n\n"
+        + COUNTS_NOTE + "\n"
+    )
+    notes.write_plain(folder, "index.md", body)
 
 
 def generate() -> tuple:

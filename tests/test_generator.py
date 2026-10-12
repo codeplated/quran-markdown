@@ -149,7 +149,8 @@ class FrontmatterIsParseableYaml(unittest.TestCase):
         for line in block.strip().splitlines():
             key, _, value = line.partition(":")
             key, value = key.strip(), value.strip()
-            if key == "tags":       # a JSON array, deliberately a YAML flow list
+            # A JSON array and a list of class names: deliberately YAML flow lists.
+            if key in ("tags", "cssclasses"):
                 fields[key] = value
                 continue
             if value.startswith('"'):
@@ -384,7 +385,7 @@ class ThemesSection(unittest.TestCase):
 
     def test_page_is_plain_lists_marked_for_the_site(self):
         self.assertIn("title: Themes", self.page)
-        self.assertIn("cssclasses: [themes-index]", self.page)
+        self.assertIn("cssclasses: [index-page, themes-index]", self.page)
         self.assertNotIn("```base", self.page)
         self.assertIn(themes.COUNTS_NOTE, self.page)
 
@@ -563,27 +564,117 @@ class AsmaMasterIndex(unittest.TestCase):
         asma_notes._write_master_index(data.asma_ul_husna, self.folder)
         self.index = (self.folder / "index.md").read_text(encoding="utf-8")
 
-    def test_lists_every_name(self):
+    def _sections(self, page=None):
+        sections, current = {}, None
+        for line in (page or self.index).splitlines():
+            if line.startswith("## "):
+                current = sections.setdefault(line[3:], [])
+            elif line.startswith("- ") and current is not None:
+                current.append(line)
+        return sections
+
+    def test_is_a_listing_page_with_one_title(self):
+        """The site draws the title from the frontmatter; a heading here was a second one."""
+        self.assertIn("\ntitle: Asma Ul Husna\n", self.index)
+        self.assertIn("\ncssclasses: [index-page, names-index]\n", self.index)
+        self.assertNotRegex(self.index, r"(?m)^# ")
+        self.assertNotRegex(self.index, r"(?m)^\|")
+
+    def test_lists_every_name_once_under_its_category(self):
+        sections = self._sections()
+        self.assertEqual(sum(len(lines) for lines in sections.values()),
+                         len(data.asma_ul_husna))
         for name in data.asma_ul_husna:
-            self.assertIn(asma_notes.note_name(name), self.index)
+            heading = asma_notes.category_heading(name["category"])
+            link = f"[[{asma_notes.note_name(name)}|{name['transliteration']}]]"
+            self.assertEqual(sum(link in line for line in sections[heading]), 1, link)
 
-    def test_every_category_gets_a_section(self):
-        for category in {n["category"] for n in data.asma_ul_husna}:
-            self.assertIn(f"## {category} — ", self.index)
+    def test_headings_drop_what_the_page_already_says(self):
+        self.assertIn("Forgiveness & Mercy", self._sections())
+        self.assertIn("The Hereafter", self._sections())
+        self.assertFalse([h for h in self._sections() if h.startswith("Names of")])
 
-    def test_table_pipes_are_escaped(self):
-        """An unescaped pipe inside [[link|alias]] breaks the table row."""
-        for line in self.index.splitlines():
-            if line.startswith("| ") and "[[" in line:
-                columns = line.replace("\\|", "").count("|")
-                self.assertEqual(columns, 5, line)
+    def test_names_run_in_traditional_order_within_a_category(self):
+        for lines in self._sections().values():
+            numbers = [int(re.search(r'class="num">(\d+)<', line).group(1)) for line in lines]
+            self.assertEqual(numbers, sorted(numbers))
+
+    def test_a_line_carries_what_the_site_lays_out(self):
+        """Number, link, Arabic marked as Arabic, count with its unit, then the details."""
+        line = asma_notes.index_line(next(n for n in data.asma_ul_husna if n["number"] == 2))
+        self.assertRegex(line, r'^- <span class="num">2</span> \[\[2 - Ar-Rahman [^|]+\|Ar-Rahman\]\] '
+                               r'<span lang="ar">[^<]+</span> '
+                               r'<span class="count">57 <span class="unit">times</span></span> '
+                               r'<small>The Most Gracious · <span lang="ur">[^<]+</span> · '
+                               r'<span class="root">root <span lang="ar">ر-ح-م</span></span></small>$')
+
+    def test_a_name_that_does_not_appear_has_no_count(self):
+        absent = next(n for n in data.asma_ul_husna if not n["quran_occurrences"])
+        self.assertNotIn('class="count"', asma_notes.index_line(absent))
+
+    def test_two_roots_are_each_marked_arabic(self):
+        """The "and" between them is English and must not be read as Arabic."""
+        two = next(n for n in data.asma_ul_husna if " and " in n["root"])
+        self.assertRegex(asma_notes.index_line(two),
+                         r'root <span lang="ar">[^<]+</span> and <span lang="ar">[^<]+</span>')
 
     def test_unknown_category_still_listed(self):
         """A category added to the data but not to CATEGORY_ORDER must not vanish."""
         extra = dict(data.asma_ul_husna[0], number=100, category="Names of Something New")
         asma_notes._write_master_index([extra], self.folder)
         refreshed = (self.folder / "index.md").read_text(encoding="utf-8")
-        self.assertIn("## Names of Something New — 1", refreshed)
+        self.assertEqual(list(self._sections(refreshed)), ["Something New"])
+
+
+class ProfileNotes(unittest.TestCase):
+    """A person's or a Name's note says its fields in lines under its heading."""
+
+    def test_a_person_links_its_type_its_ayaat_and_its_themes(self):
+        adam = next(p for p in data.personalities if p["id"] == "adam")
+        note = personalities.build(adam, data.personalities)
+        self.assertIn("\ncssclasses: [profile]\n", note)
+        self.assertIn("\n# Adam — آدَم\n\nآدم علیہ السلام\n\n> [[Personalities/index#Prophets and "
+                      "Messengers|Prophet / Messenger]] · Straight Path · ", note)
+        self.assertIn(f"[[#Mentioned in Quran|{len(adam['mentioned_in'])} ayaat]]", note)
+        self.assertIn("> **Themes:** [[tags/story_adam|" + connections.THEMES["story_adam"][1] + "]]", note)
+        self.assertEqual(len(re.findall(r"(?m)^# ", note)), 1)
+        self.assertNotRegex(note, r"(?m)^#{3,} ")
+
+    def test_a_person_with_no_other_names_or_ayaat_says_neither(self):
+        for person in data.personalities:
+            summary = personalities.summary(person)
+            if not person.get("also_known_as"):
+                self.assertNotIn("Also known as", summary)
+            if not person.get("mentioned_in"):
+                self.assertNotIn("Mentioned in Quran", summary)
+
+    def test_a_type_link_lands_on_a_heading_the_page_has(self):
+        folder = Path(tempfile.mkdtemp())
+        personalities._write_master_index(data.personalities, folder)
+        page = (folder / "index.md").read_text(encoding="utf-8")
+        for person in data.personalities:
+            target = re.search(r"\[\[Personalities/index#([^|]+)\|", personalities.summary(person))
+            self.assertIn(f"\n## {target.group(1)}\n", page)
+
+    def test_a_name_links_its_category_and_its_themes(self):
+        rahman = next(n for n in data.asma_ul_husna if n["number"] == 2)
+        note = asma_notes.build(rahman, data.asma_ul_husna)
+        self.assertIn("\ncssclasses: [profile]\n", note)
+        self.assertIn("\n**The Most Gracious**\n\n", note)
+        self.assertIn("> Name 2 of 99 · [[Asma Ul Husna/index#Forgiveness & Mercy|Names of "
+                      "Forgiveness & Mercy]] · In the Quran: 57 times\n", note)
+        self.assertIn("> **Themes:** [[tags/", note)
+        self.assertEqual(len(re.findall(r"(?m)^# ", note)), 1)
+        self.assertNotRegex(note, r"(?m)^#{3,} ")
+
+    def test_a_category_link_lands_on_a_heading_the_page_has(self):
+        folder = Path(tempfile.mkdtemp())
+        asma_notes._write_master_index(data.asma_ul_husna, folder)
+        page = (folder / "index.md").read_text(encoding="utf-8")
+        for name in data.asma_ul_husna:
+            target = re.search(r"\[\[Asma Ul Husna/index#([^|]+)\|",
+                               asma_notes.build(name, data.asma_ul_husna))
+            self.assertIn(f"\n## {target.group(1)}\n", page)
 
 
 class RenamedNoteKeepsPersonalSection(unittest.TestCase):
@@ -660,46 +751,68 @@ class QuranCardsMatchSurahNotes(unittest.TestCase):
 
 
 class PersonalitiesPage(unittest.TestCase):
-    """One table of every figure, with a tab for each path."""
+    """Every figure as a line in a plain list, under a heading for its type."""
 
     def setUp(self):
         self.folder = Path(tempfile.mkdtemp())
         personalities._write_master_index(data.personalities, self.folder)
         self.page = (self.folder / "index.md").read_text(encoding="utf-8")
 
-    def test_tabs_are_all_then_the_three_paths(self):
-        self.assertEqual(re.findall(r"^    name: (.+)$", self.page, re.MULTILINE),
-                         ["All", "Straight Path", "Mixed Path", "Deviated Path"])
+    def _sections(self):
+        sections, current = {}, None
+        for line in self.page.splitlines():
+            if line.startswith("## "):
+                current = sections.setdefault(line[3:], [])
+            elif line.startswith("- ") and current is not None:
+                current.append(line)
+        return sections
 
-    def test_each_path_tab_filters_on_a_value_the_notes_carry(self):
-        """A tab that filters on a label no note has would be an empty tab."""
-        written = {personalities.path_meta(person)[0] for person in data.personalities}
-        filtered = re.findall(r'note\.path == "(.+)"', self.page)
-        self.assertEqual(len(filtered), 3)
-        for value in filtered:
-            self.assertIn(value, written)
-        for person in data.personalities[:5]:
-            note = personalities.build(person, data.personalities)
-            self.assertIn(f"\npath: {personalities.path_meta(person)[0]}\n", note)
+    def test_is_a_listing_page_and_no_longer_a_table(self):
+        self.assertIn("\ntitle: Personalities\n", self.page)
+        self.assertIn("\ncssclasses: [index-page, people-index]\n", self.page)
+        self.assertNotIn("```base", self.page)
 
-    def test_table_is_a_base_block(self):
-        self.assertIn("```base\n" + personalities.index_base() + "```", self.page)
+    def test_lists_every_figure_once_under_its_type_in_order(self):
+        """Types in TYPE_META's order; within one, the order of the data."""
+        sections = self._sections()
+        present = [key for key in personalities.TYPE_META
+                   if any(p["type"] == key for p in data.personalities)]
+        self.assertEqual(list(sections), [personalities.TYPE_HEADINGS[key] for key in present])
+        self.assertEqual(sum(len(lines) for lines in sections.values()), len(data.personalities))
+        prophets = sections["Prophets and Messengers"]
+        self.assertIn("|Adam]]", prophets[0])
+        self.assertIn("|Nuh (Noah)]]", prophets[1])
+
+    def test_a_line_carries_what_the_site_lays_out(self):
+        """Link, Arabic marked as Arabic, count with its unit, then path, era and Urdu."""
+        adam = next(p for p in data.personalities if p["id"] == "adam")
+        self.assertRegex(personalities.index_line(adam),
+                         r'^- \[\[Adam — [^|]+\|Adam\]\] <span lang="ar">[^<]+</span> '
+                         r'<span class="count">\d+ <span class="unit">ayaat</span></span> '
+                         r'<small><span class="path" data-rank="1">Straight Path</span> · '
+                         r'Beginning of humanity · <span lang="ur">[^<]+</span></small>$')
+
+    def test_paths_carry_their_place_among_the_paths(self):
+        """The site shows the paths in this order: straight, mixed, deviated."""
+        ranks = dict(re.findall(r'data-rank="(\d)">([^<]+)<', self.page))
+        self.assertEqual(ranks, {"1": "Straight Path", "2": "Mixed Path", "3": "Deviated Path"})
+
+    def test_a_figure_with_no_ayaat_listed_has_no_count(self):
+        silent = next(p for p in data.personalities if not p.get("mentioned_in"))
+        self.assertNotIn('class="count"', personalities.index_line(silent))
+
+    def test_the_two_notes_on_paths_follow_the_lists(self):
+        self.assertIn("**Mixed Path.** ", self.page)
+        self.assertIn("**Deviated Path.** ", self.page)
 
     def test_order_runs_through_one_type_at_a_time(self):
-        """Sorted by `order`, the table's groups come out in TYPE_META's order."""
         order = personalities.listing_order(data.personalities)
         self.assertEqual(sorted(order.values()), list(range(1, len(data.personalities) + 1)))
-        by_order = sorted(data.personalities, key=lambda person: order[person["id"]])
-        types = list(dict.fromkeys(person["type"] for person in by_order))
-        self.assertEqual(types, [key for key in personalities.TYPE_META if key in types])
-        prophets = [p["name_english"] for p in by_order if p["type"] == "prophet"]
-        self.assertEqual(prophets[:2], ["Adam", "Nuh (Noah)"])
 
-    def test_every_note_carries_its_order(self):
-        order = personalities.listing_order(data.personalities)
-        for person in data.personalities:
-            self.assertIn(f"\norder: {order[person['id']]}\n",
-                          personalities.build(person, data.personalities))
+    def test_a_note_no_longer_carries_the_tables_sort_key(self):
+        """`order` only fed the table the Personalities page used to be."""
+        note = personalities.build(data.personalities[0], data.personalities)
+        self.assertNotRegex(note.split("---")[1], r"(?m)^order:")
 
 
 class LayoutMigration(unittest.TestCase):

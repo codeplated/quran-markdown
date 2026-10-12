@@ -20,6 +20,13 @@ from pathlib import Path
 
 import config
 
+# Classes the site's styling and scripts look for. A listing page (Themes,
+# Personalities, Asma Ul Husna) carries INDEX_PAGE_CLASS and one of its own;
+# a person's or a Name's note carries PROFILE_CLASS, which tells the site the
+# note draws its own heading and says its fields in a line under it.
+INDEX_PAGE_CLASS = "index-page"
+PROFILE_CLASS = "profile"
+
 # Default scaffolding for a note that does not exist yet. Once a note exists,
 # whatever the reader has put there wins — these are never re-applied.
 AYAH_PERSONAL = """
@@ -187,3 +194,25 @@ def quote(value) -> str:
 def wrap(generated_body: str) -> str:
     """Puts the sentinels around script-owned content."""
     return f"{config.SENTINEL_START}\n{generated_body}\n{config.SENTINEL_END}"
+
+
+def index_classes(own: str) -> str:
+    """The `cssclasses` value of a listing page: the shared class, then its own."""
+    return f"[{INDEX_PAGE_CLASS}, {own}]"
+
+
+def index_count(number: int, one: str, many: str) -> str:
+    """
+    The number at the end of a line on a listing page, with its unit: the site
+    sorts by the number and hides the word, which Obsidian and a screen reader
+    still get.
+    """
+    unit = one if number == 1 else many
+    return f'<span class="count">{number:,} <span class="unit">{unit}</span></span>'
+
+
+def theme_links(tags: list, themes: dict, folder: str) -> str:
+    """A note's tags as links to their themes, by name: 'Tawheed · Sabr'."""
+    return " · ".join(
+        f"[[{folder}/{tag}|{themes[tag][1]}]]" for tag in tags if tag in themes
+    )
