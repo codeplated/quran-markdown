@@ -17,8 +17,10 @@ from tadabbur import asma_notes, data, notes, personalities, themes
 RETIRED_EXPLORE_NOTES = ("index.md", "Themes.md")
 RETIRED_THEMES_NOTE = "Themes.md"
 
-# The view on the Quran's page: one card per surah, linking to the surah's
-# index note. It is written into The Quran/index.md as a `base` block, which
+# The view the Quran's page held until 2026-10-16: one card per surah, linking
+# to the surah's index note. The page is a listing now (write_quran_index);
+# this stays so layout.migrate still recognises a Quran.base it once wrote.
+# It was written into The Quran/index.md as a `base` block, which
 # Obsidian and the site both draw in place. Every folder index
 # is called "index", so the surah ones are told apart by their surah_name
 # property; the number is parsed from "surah: 2 / 114" so the cards sort in
@@ -189,9 +191,9 @@ def write_index() -> None:
 
     cards = "".join([
         _card(f"{config.QURAN_DIR}/index", "The Quran",
-              f"All {data.SURAH_COUNT} surahs and {ayaat:,} ayaat. Each ayah has "
-              "its recitation, Arabic text, Urdu and English translations and two "
-              "Urdu tafsirs.",
+              f"All {data.SURAH_COUNT} surahs and {ayaat:,} ayaat, each surah "
+              "readable through in Arabic, English and Urdu. Filter by name, or "
+              "type a reference such as 2:255 to go to an ayah.",
               _quran_examples()),
         _card(f"{config.PERSONALITIES_DIR}/index", "Personalities",
               f"The {len(data.personalities)} prophets, angels, jinn, companions, "
@@ -214,17 +216,43 @@ def write_index() -> None:
     notes.write_plain(config.VAULT_PATH, "index.md", head + _lede() + cards + _meaning())
 
 
+def _surah_line(surah: data.Surah) -> str:
+    """
+    One surah on the Quran's page, as a listing line: its number, its name
+    as readers cite it, the Arabic, how many ayaat, then the English name,
+    where it was revealed and the Urdu. The site sorts by the number, files
+    A to Z by the name and groups by the revelation's rank.
+    """
+    rank = 1 if surah.type == "meccan" else 2
+    return (
+        f'- <span class="num">{surah.number}</span> '
+        f"[[{surah.index_path}|{surah.transliteration}]] "
+        f'<span lang="ar">{surah.arabic}</span> '
+        f'{notes.index_count(surah.total_ayaat, "ayah", "ayaat")} '
+        f'<small>{surah.english} · <span class="rev" data-rank="{rank}">'
+        f'{surah.type.capitalize()}</span> · <span lang="ur">{surah.urdu}</span></small>\n'
+    )
+
+
 def write_quran_index() -> None:
     """
-    The Quran folder's own page: the surah cards.
+    The Quran folder's own page: every surah, as a listing.
 
     Left to itself the site would list the folder, 114 names sorted as text
-    (1, 10, 100, 101 …). The cards are a `base` block in the page, so there
-    is no separate Quran.base page beside it.
+    (1, 10, 100, 101 …). Until 2026-10-16 the page was a card per surah with
+    its picture, 13.8 screens on a desktop with nothing to filter by. Now it is
+    a listing like Themes, Personalities and Asma Ul Husna: one line per surah,
+    in order, which the site can filter and rearrange, and where a reference
+    such as 2:255 goes straight to the ayah.
     """
     body = (
-        notes.frontmatter({"title": notes.quote("The Quran")})
-        + f"All {data.SURAH_COUNT} surahs, in order. Open one for its ayaat.\n\n"
-        + f"```base\n{QURAN_BASE}```\n"
+        notes.frontmatter({
+            "title": notes.quote("The Quran"),
+            "cssclasses": notes.index_classes("surahs-index"),
+        })
+        + f"All {data.SURAH_COUNT} surahs, in order. Open one to read it, "
+        "or type a reference such as 2:255 to go to an ayah.\n\n"
+        + "## Surahs\n\n"
+        + "".join(_surah_line(data.SURAHS[n]) for n in range(1, data.SURAH_COUNT + 1))
     )
     notes.write_plain(config.VAULT_PATH / config.QURAN_DIR, "index.md", body)

@@ -24,28 +24,56 @@ def arabic_text(surah: int, ayah: int, raw_text: str) -> str:
     return raw_text
 
 
-def build(surah: data.Surah, ayah: int, texts: dict) -> str:
-    """Builds the frontmatter and the script-owned block for one ayah."""
-    previous = (
-        f"[[{surah.note_name(ayah - 1)}]]" if ayah > 1 else "_(Start of Surah)_"
-    )
-    following = (
-        f"[[{surah.note_name(ayah + 1)}]]"
-        if ayah < surah.total_ayaat else "_(End of Surah)_"
-    )
+# Says what kind of page this is, so the site leaves out its own title,
+# properties box, reading time and tag chips: the note's head says all four.
+AYAH_CLASS = "ayah"
 
-    # Buttons under the recitation: Next first, then Prev. The site styles
-    # them by position, so an ayah with no neighbour on one side keeps an
-    # empty slot there and the other button stays on its own side.
-    next_button = (
-        f"[[{surah.note_name(ayah + 1)}|Next {surah.number}:{ayah + 1}]]"
-        if ayah < surah.total_ayaat else "<span></span>"
-    )
-    prev_button = (
+TAFSIRS = (
+    ("tafsir", "Bayan ul Quran", "Dr. Israr Ahmad"),
+    ("tazkirul", "Tazkirul Quran", "Maulana Wahiduddin Khan"),
+)
+
+
+def step_links(surah: data.Surah, ayah: int) -> str:
+    """
+    The ayah before, the player, and the ayah after, in reading order on one
+    line. An ayah at either end of its surah keeps an empty <span> in the
+    missing slot, so the site can place the three by position.
+    """
+    previous = (
         f"[[{surah.note_name(ayah - 1)}|Prev {surah.number}:{ayah - 1}]]"
         if ayah > 1 else "<span></span>"
     )
+    following = (
+        f"[[{surah.note_name(ayah + 1)}|Next {surah.number}:{ayah + 1}]]"
+        if ayah < surah.total_ayaat else "<span></span>"
+    )
+    return f"{previous} {audio.audio_embed(surah.number, ayah)} {following}"
 
+
+def _tafsir(text: str, title: str, author: str) -> str:
+    """
+    One tafsir as a section the reader opens. Bayan ul Quran alone is three
+    and a half phone screens on Ayat al-Kursi, and it sat between the
+    translations and everything after them.
+    """
+    return f"""<details class="tafsir">
+<summary>Tafsir: {title} <span class="by">{author}</span></summary>
+
+{text}
+
+</details>
+"""
+
+
+def build(surah: data.Surah, ayah: int, texts: dict) -> str:
+    """
+    The frontmatter and the script-owned block for one ayah.
+
+    The verse comes first: a head that says where the ayah is, the player
+    between the steps to the ayaat either side, then the Arabic, the English
+    and the Urdu, the themes by name, and the two tafsirs folded.
+    """
     tags = connections.get_ayah_themes(surah.number, ayah)
 
     head = notes.frontmatter({
@@ -56,51 +84,48 @@ def build(surah: data.Surah, ayah: int, texts: dict) -> str:
         "type": surah.type,
         "tags": json.dumps(tags),
         "image": f'"{thumbnail_link(surah.number)}"',
+        "cssclasses": f"[{AYAH_CLASS}]",
     })
 
-    body = f"""## Recitation ({config.AUDIO_RECITER_NAME})
+    # The surah link lands on this ayah in the surah's full text.
+    context = (
+        f"[[{surah.index_path}#{ayah}|{surah.english}]] "
+        f'<span lang="ur">{surah.urdu}</span> · <span lang="ar">{surah.arabic}</span> · '
+        f"{surah.type.capitalize()} · Ayah {ayah} of {surah.total_ayaat}"
+    )
 
-{audio.audio_embed(surah.number, ayah)}
-{next_button} {prev_button}
+    themes = notes.theme_links(tags, connections.THEMES, config.THEMES_DIR)
+    themes_section = f"""
+## Themes
 
----
+{themes}
+""" if themes else ""
+
+    tafsirs = "\n".join(_tafsir(texts[key], title, author) for key, title, author in TAFSIRS)
+
+    # Plain text: the site's contents list and Obsidian's outline print a
+    # heading's markup as written.
+    body = f"""# {surah.transliteration} {surah.number}:{ayah}
+
+{context}
+
+{step_links(surah, ayah)}
+
+<small class="reciter">Recited by {config.AUDIO_RECITER_NAME}</small>
 
 ## Arabic
 
 {texts['arabic']}
 
----
-
-## Urdu (Syed Abul A'la Maududi)
-
-{texts['urdu']}
-
----
-
 ## English (Sahih International)
 
 {texts['english']}
 
----
+## Urdu (Syed Abul A'la Maududi)
 
-## Tafsir — Bayan ul Quran (Dr. Israr Ahmad)
-
-{texts['tafsir']}
-
----
-
-## Tafsir — Tazkirul Quran (Maulana Wahiduddin Khan)
-
-{texts['tazkirul']}
-
----
-
-## Connections
-
-- **Previous:** {previous}
-- **Next:** {following}
-- **Thematic:** *(add links here)*
-"""
+{texts['urdu']}
+{themes_section}
+{tafsirs}"""
 
     return head + notes.wrap(body)
 

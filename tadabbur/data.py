@@ -37,7 +37,8 @@ SURAH_COUNT = len(chapters_en)
 class Surah:
     """The names and metadata of one surah, gathered from both chapter files."""
 
-    __slots__ = ("number", "english", "arabic", "urdu", "type", "total_ayaat")
+    __slots__ = ("number", "english", "arabic", "urdu", "transliteration", "type",
+                 "total_ayaat")
 
     def __init__(self, number: int):
         index = number - 1
@@ -45,6 +46,7 @@ class Surah:
         self.english = chapters_en[index]["translation"]
         self.arabic = chapters_ur[index]["name"]
         self.urdu = chapters_ur[index]["translation"]
+        self.transliteration = chapters_en[index]["transliteration"]
         self.type = chapters_ur[index]["type"]
         self.total_ayaat = chapters_ur[index]["total_verses"]
 
@@ -86,8 +88,12 @@ class Surah:
         return f"{self.number}_{ayah}"
 
     def display_name(self, ayah: int) -> str:
-        """Human-readable ayah heading, e.g. '2_255: The Cow البقرة'."""
-        return f"{self.number}_{ayah}: {self.english} {self.arabic}"
+        """
+        An ayah's page title, e.g. 'Al-Baqarah 2:255': the surah by the name
+        readers cite it by, and the reference as it is written everywhere
+        else. Search, backlinks and the browser tab all show it.
+        """
+        return f"{self.transliteration} {self.number}:{ayah}"
 
 
 # Built once so any module can turn a surah number into its names.
@@ -101,21 +107,27 @@ def wikilink(surah: int, ayah: int) -> str:
     return f"[[{surah}_{ayah}]]"
 
 
-# Both tafsirs explain several ayaat in one passage. The passage goes on the
-# first ayah, which says how far it reaches; the rest point back to it rather
-# than repeat it, which on a phone would be the same long text page after page.
+# Both tafsirs explain several ayaat in one passage. Every ayah the passage
+# covers carries it whole, under a line that says how far it reaches: a reader
+# who lands on 2:3 gets the commentary there, not a link to 2:1. Until
+# 2026-10-16 only the first ayah carried it, because unfolded on a phone it was
+# the same long text page after page; the site now folds both tafsirs.
 TAFSIR_MISSING = "_Tafsir not available for this ayah._"
 
 
 def _passage(surah: int, ayah: int, text: str, first: int, last: int) -> str:
-    """One ayah's share of a passage covering ayaat first..last."""
-    if first != ayah:
-        link = f"[[{SURAHS[surah].note_name(first)}|ayah {surah}:{first}]]"
-        return f"_The commentary on this ayah is given with {link}._"
+    """A passage covering ayaat first..last, as one of those ayaat shows it."""
     if last == first:
         return text
+
+    def link(number: int) -> str:
+        reference = f"{surah}:{number}"
+        if number == ayah:
+            return reference
+        return f"[[{SURAHS[surah].note_name(number)}|{reference}]]"
+
     joiner = "and" if last == first + 1 else "to"
-    return f"_This commentary covers ayaat {first} {joiner} {last}._\n\n{text}"
+    return f"_This commentary is for ayaat {link(first)} {joiner} {link(last)}._\n\n{text}"
 
 
 def load_tafsir(surah: int, ayah: int) -> str:
@@ -136,7 +148,16 @@ def load_tafsir(surah: int, ayah: int) -> str:
     covers = entry.get("covers")
     if not covers:
         return "_Bayan ul Quran has no separate commentary on this ayah._"
-    return _passage(surah, ayah, entry.get("text", ""), *covers)
+    first = covers[0]
+    text = entry.get("text", "")
+    if first != ayah:
+        # The passage's text is kept once, on its first ayah.
+        try:
+            with open(config.BAYAN_DIR / str(surah) / f"{first}.json", encoding="utf-8") as handle:
+                text = json.load(handle).get("text", "")
+        except (FileNotFoundError, json.JSONDecodeError, OSError):
+            return TAFSIR_MISSING
+    return _passage(surah, ayah, text, *covers)
 
 
 @cache

@@ -89,7 +89,7 @@ class NoteFilenames(unittest.TestCase):
         self.assertEqual(data.wikilink(2, 255), "[[2_255]]")
 
     def test_ayah_display_name(self):
-        self.assertEqual(data.SURAHS[2].display_name(255), "2_255: The Cow البقرة")
+        self.assertEqual(data.SURAHS[2].display_name(255), "Al-Baqarah 2:255")
 
     def test_folder_name_has_no_arabic(self):
         self.assertEqual(data.SURAHS[2].folder_name, "2 - The Cow")
@@ -178,20 +178,54 @@ class FrontmatterIsParseableYaml(unittest.TestCase):
         self.assertEqual(notes.quote('a "b" c'), '"a \\"b\\" c"')
 
 
-class AyahNavButtons(unittest.TestCase):
-    """The site styles the buttons by position: Next, then Prev, both always there."""
+class AyahNote(unittest.TestCase):
+    """
+    The verse first: a head, the steps either side of the player, the three
+    texts, the themes by name, then the tafsirs folded.
+    """
 
-    def _nav(self, surah, ayah):
-        body = ayah_notes.build(data.SURAHS[surah], ayah, {
-            "arabic": "a", "urdu": "u", "english": "e", "tafsir": "t", "tazkirul": "z"})
-        return body.split("</audio>\n", 1)[1].split("\n", 1)[0]
+    TEXTS = {"arabic": "ARABIC", "urdu": "URDU", "english": "ENGLISH",
+             "tafsir": "TAFSIR", "tazkirul": "TAZKIRUL"}
 
-    def test_middle_ayah_has_both(self):
-        self.assertEqual(self._nav(11, 7), "[[11_8|Next 11:8]] [[11_6|Prev 11:6]]")
+    def _note(self, surah, ayah):
+        return ayah_notes.build(data.SURAHS[surah], ayah, self.TEXTS)
+
+    def _steps(self, surah, ayah):
+        line = ayah_notes.step_links(data.SURAHS[surah], ayah)
+        return re.sub(r"<audio[^>]*></audio>", "PLAYER", line)
+
+    def test_steps_read_prev_player_next(self):
+        self.assertEqual(self._steps(11, 7), "[[11_6|Prev 11:6]] PLAYER [[11_8|Next 11:8]]")
 
     def test_edges_keep_an_empty_slot(self):
-        self.assertEqual(self._nav(1, 1), "[[1_2|Next 1:2]] <span></span>")
-        self.assertEqual(self._nav(1, 7), "<span></span> [[1_6|Prev 1:6]]")
+        self.assertEqual(self._steps(1, 1), "<span></span> PLAYER [[1_2|Next 1:2]]")
+        self.assertEqual(self._steps(1, 7), "[[1_6|Prev 1:6]] PLAYER <span></span>")
+
+    def test_head_names_the_surah_and_links_back_into_its_text(self):
+        note = self._note(2, 255)
+        self.assertIn("\n# Al-Baqarah 2:255\n", note)
+        self.assertIn("[[The Quran/2 - The Cow/index#255|The Cow]] "
+                      '<span lang="ur">گائے</span> · <span lang="ar">البقرة</span>', note)
+        self.assertIn("Ayah 255 of 286", note)
+
+    def test_texts_come_in_order_before_the_tafsirs(self):
+        note = self._note(2, 255)
+        order = [note.index(text) for text in ("ARABIC", "ENGLISH", "URDU", "## Themes",
+                                                "TAFSIR", "TAZKIRUL")]
+        self.assertEqual(order, sorted(order))
+
+    def test_tafsirs_are_folded(self):
+        note = self._note(2, 255)
+        self.assertEqual(note.count('<details class="tafsir">'), 2)
+        self.assertEqual(note.count("</details>"), 2)
+
+    def test_tells_the_site_it_draws_its_own_head(self):
+        self.assertIn("\ncssclasses: [ayah]\n", self._note(2, 255))
+
+    def test_no_placeholder_connections(self):
+        note = self._note(2, 255)
+        self.assertNotIn("add links here", note)
+        self.assertNotIn("## Connections", note)
 
 
 class TafsirPassages(unittest.TestCase):
@@ -199,12 +233,13 @@ class TafsirPassages(unittest.TestCase):
 
     def test_passage_start_carries_text_and_its_reach(self):
         tafsir = data.load_tafsir(1, 6)
-        self.assertTrue(tafsir.startswith("_This commentary covers ayaat 6 and 7._"))
+        self.assertTrue(tafsir.startswith("_This commentary is for ayaat 1:6 and [[1_7|1:7]]._"))
         self.assertIn("اِہْدِنَا", tafsir)
 
-    def test_rest_of_passage_links_back_to_its_start(self):
-        self.assertEqual(data.load_tafsir(1, 7),
-                         "_The commentary on this ayah is given with [[1_6|ayah 1:6]]._")
+    def test_every_ayah_of_a_passage_carries_it_whole(self):
+        later = data.load_tafsir(1, 7)
+        self.assertTrue(later.startswith("_This commentary is for ayaat [[1_6|1:6]] and 1:7._"))
+        self.assertEqual(later.split("\n\n", 1)[1], data.load_tafsir(1, 6).split("\n\n", 1)[1])
 
     def test_no_link_across_surahs(self):
         # quran.com chains 13:1 onto 12:111's commentary, which is about 12:111.
@@ -216,11 +251,12 @@ class TafsirPassages(unittest.TestCase):
     def test_tazkirul_repeats_become_one_passage(self):
         # The source repeats 2:1-5's passage on all five ayaat.
         self.assertTrue(data.load_tazkirul(2, 1).startswith(
-            "_This commentary covers ayaat 1 to 5._"))
+            "_This commentary is for ayaat 2:1 to [[2_5|2:5]]._"))
+        text = data.load_tazkirul(2, 1).split("\n\n", 1)[1]
         for ayah in range(2, 6):
-            self.assertEqual(data.load_tazkirul(2, ayah),
-                             "_The commentary on this ayah is given with [[2_1|ayah 2:1]]._")
-        self.assertFalse(data.load_tazkirul(2, 6).startswith("_The commentary"))
+            self.assertEqual(data.load_tazkirul(2, ayah).split("\n\n", 1)[1], text)
+        self.assertIn("[[2_1|2:1]] to [[2_5|2:5]]", data.load_tazkirul(2, 3))
+        self.assertNotIn("2:5", data.load_tazkirul(2, 6).split("\n\n", 1)[0])
 
     def test_tazkirul_paragraphs_are_separate(self):
         self.assertNotRegex(data.load_tazkirul(2, 1), r"[^\n]\n[^\n]")
@@ -250,11 +286,37 @@ class SurahIndexNote(unittest.TestCase):
         self.assertNotIn("← ", surah_index.build(data.SURAHS[1]))
         self.assertNotIn(" →", surah_index.build(data.SURAHS[114]))
 
-    def test_themes_are_capped_and_counted(self):
+    def test_head_names_the_most_frequent_themes(self):
         themes = surah_index.theme_counts(2)
         self.assertGreater(len(themes), surah_index.THEME_LIMIT)
-        self.assertEqual(self.note.count("](tags/"), surah_index.THEME_LIMIT)
+        head = self.note.split("## Ayaat", 1)[0].split("<details", 1)[0]
+        self.assertEqual(head.count("#surah-2|"), surah_index.THEME_LIMIT)
         self.assertEqual([c for _k, c in themes], sorted((c for _k, c in themes), reverse=True))
+
+    def test_every_theme_is_folded_under_the_head(self):
+        folded = self.note.split('<details class="surah-themes">', 1)[1].split("</details>", 1)[0]
+        self.assertEqual(folded.count("#surah-2|"), len(surah_index.theme_counts(2)))
+
+    def test_a_short_list_needs_no_fold(self):
+        short = next(n for n in data.SURAHS
+                     if 0 < len(surah_index.theme_counts(n)) <= surah_index.THEME_LIMIT)
+        self.assertNotIn("surah-themes", surah_index.build(data.SURAHS[short]))
+
+    def test_holds_the_whole_text(self):
+        for ayah in (1, 255, 286):
+            key = str(2)
+            self.assertIn(f'<span lang="ar" id="{ayah}">{data.quran[key][ayah - 1]["text"]}</span>',
+                          self.note)
+            self.assertIn(f'<span lang="en">{data.english[key][ayah - 1]["text"]}</span>', self.note)
+            self.assertIn(f'<span lang="ur">{data.urdu[key][ayah - 1]["text"]}</span>', self.note)
+
+    def test_bismillah_once_over_the_text_where_the_surah_has_one(self):
+        self.assertEqual(self.note.count(config.BISMILLAH), 1)
+        self.assertNotIn('class="bismillah"', surah_index.build(data.SURAHS[1]))
+        self.assertNotIn('class="bismillah"', surah_index.build(data.SURAHS[9]))
+
+    def test_tells_the_site_it_draws_its_own_head(self):
+        self.assertIn("\ncssclasses: [surah]\n", self.note)
 
 
 class HomeAndSectionPages(unittest.TestCase):
@@ -324,9 +386,19 @@ class HomeAndSectionPages(unittest.TestCase):
         self.assertNotIn("](tags/", self.home)
         self.assertNotIn("| Topic |", self.home)
 
-    def test_quran_page_holds_the_surah_cards_as_a_base_block(self):
-        self.assertIn("```base\n" + explore.QURAN_BASE + "```", self.quran)
+    def test_quran_page_is_a_listing_of_every_surah_in_order(self):
         self.assertIn('title: "The Quran"', self.quran)
+        self.assertIn("cssclasses: [index-page, surahs-index]", self.quran)
+        self.assertNotIn("```base", self.quran)
+        numbers = [int(n) for n in re.findall(r'^- <span class="num">(\d+)</span> ',
+                                              self.quran, re.MULTILINE)]
+        self.assertEqual(numbers, list(range(1, data.SURAH_COUNT + 1)))
+
+    def test_a_surah_line_says_what_the_site_arranges_by(self):
+        self.assertIn('- <span class="num">2</span> [[The Quran/2 - The Cow/index|Al-Baqarah]] '
+                      '<span lang="ar">البقرة</span> <span class="count">286 '
+                      '<span class="unit">ayaat</span></span> <small>The Cow · '
+                      '<span class="rev" data-rank="2">Medinan</span> · ', self.quran)
 
     def test_no_emoji(self):
         for page, where in ((self.home, "home page"), (self.quran, "Quran page")):
@@ -771,20 +843,16 @@ class RenamedFolderKeepsPersonalSections(unittest.TestCase):
         self.assertFalse(notes.rename_folder(self.parent, "1 - old", "1 new"))
 
 
-class QuranCardsMatchSurahNotes(unittest.TestCase):
-    """The surah grid shows one card per surah, linking to its index note."""
+class SurahNotesSayWhatTheSiteReads(unittest.TestCase):
+    """The site's menu and theme pages read these fields off every surah page."""
 
-    def test_filters_on_what_only_surah_indexes_have(self):
-        self.assertIn('file.name == "index"', explore.QURAN_BASE)
-        self.assertIn('file.hasProperty("surah_name")', explore.QURAN_BASE)
+    def test_fields(self):
         for number in data.SURAHS:
             fields = surah_index.build(data.SURAHS[number]).split("---")[1]
             self.assertIn("\nsurah_name: ", fields)
             self.assertIn(f"\nsurah: {number} / ", fields)
             self.assertIn("\ntitle: ", fields)
-
-    def test_card_title_is_not_repeated_as_a_row(self):
-        self.assertNotIn("note.title", explore.QURAN_BASE)
+            self.assertIn("\ntransliteration: ", fields)
 
 
 class PersonalitiesPage(unittest.TestCase):

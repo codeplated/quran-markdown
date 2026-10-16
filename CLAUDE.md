@@ -137,8 +137,8 @@ folder a reader lands on therefore writes its own:
 | Folder | Written by | Holds |
 |---|---|---|
 | vault root | `explore.write_index` | the home page: one line on what the site is, the four cards, then what Tadabbur means. A card says what its section holds and how its page can be arranged, then lists three entries from it with their counts. The entries are named in `explore.py` (`THEME_EXAMPLES` …); the counts are computed. The arrangements a card names are the ones the site's listing script offers, so the two change together |
-| `The Quran/` | `explore.write_quran_index` | one card per surah, as a `base` block in the page |
-| `The Quran/2 - The Cow/` | `surah_index.generate` | the surah's identity, themes, and every ayah in order |
+| `The Quran/` | `explore.write_quran_index` | the Quran page: every surah, one line each, as a listing like the three below |
+| `The Quran/2 - The Cow/` | `surah_index.generate` | the surah itself: a short head (names, place, themes), then every ayah in Arabic, English and Urdu with its themes |
 | `Personalities/` | `personalities._write_master_index` | the Personalities page: every figure under its type, as headings and lists |
 | `Asma Ul Husna/` | `asma_notes._write_master_index` | the Asma Ul Husna page: every Name under its category, as headings and lists |
 | `tags/` | `themes.write_index` | the Themes page: every theme under its category, as headings and lists |
@@ -161,12 +161,14 @@ Urdu or Arabic, a count and some details, each in an element of its own:
 
 | Page | Groups, in order | Count | Details |
 |---|---|---|---|
+| The Quran | one, "Surahs", in order | ayaat in the surah | English name, Meccan or Medinan (`<span class="rev" data-rank>`), Urdu |
 | Themes | categories, as `THEMES` declares them | ayaat that carry the theme | description |
 | Personalities | types, as `TYPE_META` declares them (`TYPE_HEADINGS` names them) | ayaat the note lists; none when it lists none | path, era, Urdu name |
 | Asma Ul Husna | categories, as `CATEGORY_ORDER` declares them, without their "Names of " | times in the Quran; none when not in this form | meaning in English and Urdu, root |
 
 Each page carries `cssclasses: [index-page, X]` (`notes.index_classes`), X being
-`themes-index`, `people-index` or `names-index`.
+`surahs-index`, `themes-index`, `people-index` or `names-index`. A surah's line
+begins with its number, as a Name's does.
 
 A page reads as it is in Obsidian and with scripts off. The site lays the lines
 out in columns and adds a filter and other arrangements from what each line
@@ -222,6 +224,40 @@ personal sections travel with their notes. It also removes the listings the old
 layout needed (`0 - Explore/index.md`, `0 - Explore/Themes.md`, a top-level
 `Themes.md`, the pages under `Personalities/Filtered/`) and a `Quran.base`
 nobody edited.
+
+**A surah's page is the surah, and an ayah's page the verse first** (since
+2026-10-16). Both carry a class that tells the site they draw their own head
+(`surah`, `ayah`), so it leaves out its title, properties box, reading time
+and, on an ayah, its tag chips.
+
+A surah's `index.md`: its picture, `# Al-Baqarah البقرة`, a line with the
+English and Urdu names, a quote block (place, neighbours, the eight most
+frequent themes, each linked to `tags/<key>#surah-N`, the surah's ayaat on
+that theme's page), every theme folded in `<details class="surah-themes">`
+when there are more, then `## Ayaat`: the Bismillah where the surah has one,
+and one list item per ayah, a line each:
+
+```
+- [[2_255|255]] <span lang="ar" id="255">…</span>
+  <span lang="en">…</span>
+  <span lang="ur">…</span>
+  [[tags/tawheed|Tawheed]] · [[tags/asma_ul_husna|Asma ul Husna]]
+```
+
+The Arabic's id is the ayah's number, so `index#255` lands on it; an ayah's
+page links back that way. Wikilinks stay outside HTML tags, where Obsidian
+would print them as text.
+
+An ayah's note: `# Al-Baqarah 2:255` (plain text: the site's contents list and
+Obsidian's outline print a heading's markup as written), a line linking to the
+ayah in its surah's text, Prev, the player and Next on one line
+(`ayah_notes.step_links`, an empty `<span>` for a missing neighbour), the
+reciter, `## Arabic`, `## English (…)`, `## Urdu (…)`, `## Themes` by name,
+then each tafsir in `<details class="tafsir">`. A tafsir passage that covers
+several ayaat is on every one of them, whole, under "This commentary is for
+ayaat 2:1 to 2:5." (`data._passage`); until 2026-10-16 only its first ayah
+carried it and the rest linked back. The Connections section, which
+repeated Prev and Next and held a placeholder, is gone.
 
 Links between these notes must use the **full vault path**,
 `[[The Quran/2 - The Cow/index|…]]`, from `data.Surah.index_path`. 114 notes
@@ -318,13 +354,13 @@ Built by `data.Surah.note_name()`, `asma_notes.note_name()` and
 `personalities.note_name()`. A note's filename is its wikilink target and its
 URL on the site, so the published site's links depend on all three. Ayah notes
 take their page title from the `title` frontmatter
-(`data.Surah.display_name()`, `2_255: The Cow البقرة`) instead.
+(`data.Surah.display_name()`, `Al-Baqarah 2:255`) instead.
 
 Anything that finds notes by path has to follow a rename too: canvases store
 vault paths, which `assets.relink_canvas` moves from the old layouts.
-The surah cards (`explore.QURAN_BASE`) link each card to a surah's `index`
-note, picked by `file.name == "index"` plus the `surah_name` property; the
-card heading is the index note's `title` (`2 - The Cow البقرة`).
+The Quran page links each surah's `index` note by its full path. The surah
+cards it held until 2026-10-16 (`explore.QURAN_BASE`) are kept only so
+`layout.migrate` still recognises a `Quran.base` they once wrote.
 
 Renaming a note type means moving the existing files, not writing new ones
 beside them — `notes.rename_note` does that, so the reader's personal section
